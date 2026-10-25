@@ -1,0 +1,13 @@
+# Local-only overrides for `wrangler dev`. Copy to .dev.vars (gitignored).
+# Values here take precedence over [vars] in wrangler.toml.
+APEX_HOST=localhost
+PUBLIC_BASE_URL=http://localhost:8787
+SESSION_SECRET=dev-only-session-secret-change-me
+
+# Optional SSO providers (also set the matching callback URL in the provider):
+# GOOGLE_CLIENT_ID=
+# GOOGLE_CLIENT_SECRET=
+# GITHUB_CLIENT_ID=
+# GITHUB_CLIENT_SECRET=
+# GITLAB_CLIENT_ID=
+# GITLAB_CLIENT_SECRET=

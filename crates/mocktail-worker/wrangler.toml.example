@@ -1,0 +1,51 @@
+# Cloudflare Workers deploy config for the mocktail WASM target.
+# Build with worker-build (workers-rs). Deploy: `wrangler deploy`.
+name = "mocktail"
+main = "build/worker/shim.mjs"
+compatibility_date = "2024-09-23"
+
+[build]
+# The portal build is uploaded as static assets alongside the Worker.
+command = "npm --prefix ../../frontend install --no-audit --no-fund && npm --prefix ../../frontend run build && cargo install -q worker-build@^0.8 && worker-build --release"
+
+# The Worker runs first so workspace hosts reach the mock runtime and only the
+# admin host serves the SPA. Unknown admin paths fall back to index.html.
+[assets]
+directory = "../../frontend/build"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = true
+
+# A wildcard route + wildcard cert is required so {workspace}.<apex> resolves
+# to this Worker. Uncomment and replace the domain with your zone:
+# routes = [
+#   { pattern = "mocktail.example.com/*", zone_name = "example.com" },
+#   { pattern = "*.mocktail.example.com/*", zone_name = "example.com" },
+# ]
+# Without a route the Worker is only reachable at its workers.dev hostname.
+#
+# Prerequisites for the routes above:
+#   - Zone "example.com" must be active in this Cloudflare account.
+#   - Two PROXIED (orange-cloud) DNS records, or the Worker never runs:
+#       mocktail.example.com     (A/AAAA/CNAME, placeholder target)
+#       *.mocktail.example.com   (wildcard, placeholder target)
+#   - Universal SSL covers the apex + one wildcard label only; a workspace
+#     slug with a dot in it needs Advanced Certificate Manager (paid).
+
+# Fully-Cloudflare data store: D1 (SQLite). Create and bind it:
+#   wrangler d1 create mocktail
+# then paste the returned database_id below. Local dev works without it:
+#   npm run d1:migrate:local
+# The code reads this binding as "DB".
+[[d1_databases]]
+binding = "DB"
+database_name = "mocktail"
+database_id = "<your-d1-database-id>"
+# Schema lives with the crate that owns it (mocktail-infra-sqlite).
+migrations_dir = "../mocktail-infra-sqlite/migrations"
+
+# Non-secret config. Secrets (SESSION_SECRET and OAuth client secrets) go via
+# `wrangler secret put <NAME>`; local dev reads them from .dev.vars.
+[vars]
+APEX_HOST = "<your-apex-host>"
+PUBLIC_BASE_URL = "https://<your-apex-host>"

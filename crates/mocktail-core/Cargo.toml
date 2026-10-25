@@ -1,0 +1,22 @@
+[package]
+name = "mocktail-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+# DOMAIN + APPLICATION only. Pure. No runtime, framework, or storage driver.
+# Must compile to both native and wasm32.
+[dependencies]
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
+thiserror.workspace = true
+regex.workspace = true
+base64.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+async-trait.workspace = true
+serde_json.workspace = true

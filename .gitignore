@@ -1,1 +1,21 @@
 /target
+
+# Local operator config (may hold real secrets). Commit example.config.yaml only.
+/config.yaml
+/mocktail.yaml
+
+# Local SQLite store files.
+*.db
+*.db-wal
+*.db-shm
+
+# Node dependencies.
+node_modules/
+
+# Cloudflare Workers local state and generated config.
+.wrangler/
+crates/mocktail-worker/wrangler.toml
+
+# Local secrets / dev vars (commit the .example files only).
+.dev.vars
+crates/mocktail-native/config.yaml

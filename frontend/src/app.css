@@ -1,0 +1,357 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------ *
+ * mocktail portal design system
+ * Dark-first developer tool. Slate surfaces + a green "run" accent.
+ * Tokens are plain CSS variables (light/dark) mapped into Tailwind via
+ * @theme inline, so utilities like `bg-surface` / `text-muted` follow
+ * the active theme automatically (dark + light).
+ * ------------------------------------------------------------------ */
+
+/* Cloudflare-dashboard aesthetic: light-first, white cards on a warm-gray
+ * canvas, the signature Cloudflare orange for primary actions, blue text
+ * links, soft 1px elevation. Dark mode mirrors the same system. */
+:root {
+  color-scheme: light;
+
+  --bg: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f4f4f5;
+  --surface-hover: #f0f0f1;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --fg: #1c1c1e;
+  --muted: #5a5a63;
+  --faint: #8e8e98;
+
+  --accent: #f6821f; /* Cloudflare orange */
+  --accent-hover: #e3700f;
+  --accent-fg: #ffffff;
+  --accent-soft: #fdf0e3;
+
+  --link: #0055dc;
+  --link-hover: #0043ad;
+
+  --danger: #d92d20;
+  --danger-hover: #b42318;
+  --danger-soft: #fdeceb;
+
+  --ring: #f6821f;
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.04);
+  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
+
+  /* HTTP method hues (semantic, used as pills). */
+  --m-get: #0b8457;
+  --m-post: #0055dc;
+  --m-put: #b45309;
+  --m-patch: #7c3aed;
+  --m-delete: #d92d20;
+  --m-head: #6b7280;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --bg: #17181c;
+    --surface: #1f2127;
+    --surface-2: #262931;
+    --surface-hover: #2b2e37;
+    --border: #30333c;
+    --border-strong: #3d414c;
+    --fg: #ececee;
+    --muted: #a1a1aa;
+    --faint: #6b6f7a;
+
+    --accent: #f6821f;
+    --accent-hover: #ff922f;
+    --accent-fg: #1a1206;
+    --accent-soft: #2a1f12;
+
+    --link: #6aa5ff;
+    --link-hover: #8ebcff;
+
+    --danger: #f97066;
+    --danger-hover: #fda29b;
+    --danger-soft: #2d1a18;
+
+    --ring: #f6821f;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
+
+    --m-get: #34d399;
+    --m-post: #60a5fa;
+    --m-put: #fbbf24;
+    --m-patch: #a78bfa;
+    --m-delete: #f87171;
+    --m-head: #9ca3af;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-soft: var(--danger-soft);
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    background: var(--bg);
+    color: var(--fg);
+  }
+  body {
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  /* Consistent, visible keyboard focus across the app (a11y §1). */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  /* Slim, themed scrollbars. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+    border: 3px solid var(--bg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Monospace for anything copyable: URLs, paths, request ids. */
+.mono {
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-feature-settings: 'tnum';
+}
+
+@layer components {
+  /* ---- buttons ---- */
+  .btn {
+    @apply inline-flex cursor-pointer select-none items-center justify-center gap-1.5
+      rounded-md px-3.5 py-2 text-sm font-medium transition-colors duration-150
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-sm {
+    @apply gap-1 rounded-md px-2.5 py-1.5 text-xs;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+  .btn-primary:not(:disabled):hover {
+    background: var(--accent-hover);
+  }
+  .btn-secondary {
+    background: var(--surface-2);
+    color: var(--fg);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:not(:disabled):hover {
+    background: var(--surface-hover);
+    border-color: var(--border-strong);
+  }
+  .btn-ghost {
+    color: var(--muted);
+  }
+  .btn-ghost:not(:disabled):hover {
+    background: var(--surface-hover);
+    color: var(--fg);
+  }
+  .btn-danger {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+  }
+  .btn-danger:not(:disabled):hover {
+    background: var(--danger-soft);
+    border-color: var(--danger);
+  }
+
+  /* ---- inputs ---- */
+  .field {
+    @apply flex flex-col gap-1.5;
+  }
+  .label {
+    @apply text-xs font-medium;
+    color: var(--muted);
+  }
+  .input,
+  .select,
+  .textarea {
+    @apply w-full rounded-md px-3 py-2 text-sm transition-colors duration-150;
+    background: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--border-strong);
+  }
+  .input::placeholder,
+  .textarea::placeholder {
+    color: var(--faint);
+  }
+  .input:hover,
+  .select:hover,
+  .textarea:hover {
+    border-color: var(--border-strong);
+  }
+  .input:focus,
+  .select:focus,
+  .textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  .textarea {
+    @apply resize-y leading-relaxed;
+  }
+
+  /* ---- surfaces ---- */
+  .card {
+    @apply rounded-lg p-5;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* ---- badges / method pills ---- */
+  .badge {
+    @apply inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide;
+    background: var(--surface-2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .method {
+    @apply inline-flex min-w-[52px] items-center justify-center rounded-md px-1.5 py-0.5
+      text-[11px] font-bold tracking-wide;
+    border: 1px solid currentColor;
+  }
+  .method-get {
+    color: var(--m-get);
+  }
+  .method-post {
+    color: var(--m-post);
+  }
+  .method-put {
+    color: var(--m-put);
+  }
+  .method-patch {
+    color: var(--m-patch);
+  }
+  .method-delete {
+    color: var(--m-delete);
+  }
+  .method-head {
+    color: var(--m-head);
+  }
+
+  /* ---- tabs ---- */
+  .tab {
+    @apply relative cursor-pointer rounded-md px-3 py-2 text-sm font-medium capitalize
+      transition-colors duration-150;
+    color: var(--muted);
+  }
+  .tab:hover {
+    color: var(--fg);
+  }
+  .tab-active {
+    color: var(--fg);
+  }
+  .tab-active::after {
+    content: '';
+    @apply absolute inset-x-2 -bottom-px h-0.5 rounded-full;
+    background: var(--accent);
+  }
+
+  /* ---- data table ---- */
+  .tbl {
+    @apply w-full border-collapse text-sm;
+  }
+  .tbl thead th {
+    @apply px-3 py-2.5 text-left text-xs font-medium;
+    color: var(--faint);
+    border-bottom: 1px solid var(--border);
+  }
+  .tbl tbody td {
+    @apply px-3 py-2.5 align-middle;
+    border-bottom: 1px solid var(--border);
+  }
+  .tbl tbody tr {
+    transition: background-color 150ms;
+  }
+  .tbl tbody tr:hover {
+    background: var(--surface-hover);
+  }
+
+  .cbx {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    accent-color: var(--accent);
+  }
+  .pill {
+    @apply inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize;
+    border-color: var(--border);
+    background: var(--surface-2);
+    color: var(--muted);
+  }
+  .pill-openapi {
+    border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  .link {
+    color: var(--link);
+    @apply font-medium;
+  }
+  .link:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+  }
+
+  .dropzone {
+    @apply flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-6 transition-colors duration-150;
+    border-color: var(--border-strong);
+    background: var(--surface-2);
+  }
+  .dropzone:hover,
+  .dropzone-active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+}

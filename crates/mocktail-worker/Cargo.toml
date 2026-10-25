@@ -1,0 +1,28 @@
+[package]
+name = "mocktail-worker"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+# COMPOSITION ROOT for Cloudflare Workers (WASM).
+# Only built for wasm32-unknown-unknown; excluded from the workspace's
+# default-members so host builds/tests skip it.
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+mocktail-core.workspace = true
+mocktail-http.workspace = true
+mocktail-infra-sqlite.workspace = true
+async-trait.workspace = true
+axum.workspace = true
+tower-service.workspace = true
+serde_json.workspace = true
+hmac.workspace = true
+sha2.workspace = true
+worker = { version = "0.8", features = ["d1", "axum", "http"] }
+uuid = { version = "1", features = ["v4", "js"] }
+getrandom = { version = "0.2", features = ["js"] }
+wasm-bindgen = "0.2"
+js-sys = "0.3"

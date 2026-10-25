@@ -1,0 +1,21 @@
+# Sample self-host deployment.
+#
+#   cp example.config.yaml config.yaml   # set adminHost/publicBaseUrl + SSO credentials
+#   docker compose up --build
+#
+# The portal and mock runtime share port 8787; SQLite state is kept on the
+# mocktail-data volume (docker compose down -v removes it).
+services:
+  mocktail:
+    build: .
+    image: mocktail
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config.yaml:/etc/mocktail/config.yaml:ro
+      - mocktail-data:/data
+    command: ["--config", "/etc/mocktail/config.yaml", "-o", "sqlite.path=/data/mocktail.db"]
+
+volumes:
+  mocktail-data:

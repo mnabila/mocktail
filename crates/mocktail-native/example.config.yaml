@@ -1,0 +1,41 @@
+# Example operator config. Copy to config.yaml and edit, or
+# override any key per-invocation: mocktail -c config.yaml -o sqlite.path=/data/prod.db
+server:
+  # Address the HTTP server binds (one port serves both admin and mock traffic).
+  bind: "0.0.0.0:8787"
+  # Apex/base domain reserved for the admin surface. Workspaces resolve as
+  # {workspace-slug}.<adminHost>. For local testing use "localhost" and send
+  # Host: acme.localhost to reach the "acme" workspace.
+  adminHost: "mocktail.local"
+  # Public base URL used to derive OAuth redirect URIs
+  # ({publicBaseUrl}/auth/{provider}/callback).
+  publicBaseUrl: "https://mocktail.local"
+
+sqlite:
+  # Path to the SQLite database file (created if absent, WAL mode). The native
+  # self-host store: dependency-free, single file, no external database.
+  path: "mocktail.db"
+
+auth:
+  # HMAC secret for signing session + OAuth-state tokens. REQUIRED once any
+  # provider is configured. Pass via CLI override to keep it out of a committed
+  # file: mocktail -c config.yaml -o auth.sessionSecret=$SECRET
+  sessionSecret: ""
+  sessionTtlHours: 168
+  # Set false only for plain-HTTP local development.
+  secureCookies: true
+  # SSO only. A provider is enabled only when its credentials
+  # are present. The operator registers their own OAuth apps; redirect URI is
+  # {publicBaseUrl}/auth/{provider}/callback.
+  # google:
+  #   clientId: "..."
+  #   clientSecret: "..."
+  #   redirectUrl: "https://your-custom-url.com/callback"
+  # github:
+  #   clientId: "..."
+  #   clientSecret: "..."
+  #   redirectUrl: "https://your-custom-url.com/callback"
+  # gitlab:
+  #   clientId: "..."
+  #   clientSecret: "..."
+  #   redirectUrl: "https://your-custom-url.com/callback"
