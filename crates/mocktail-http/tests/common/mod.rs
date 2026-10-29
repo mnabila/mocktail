@@ -327,12 +327,12 @@ impl RequestLogRepository for FakeRepos {
 
 #[async_trait]
 impl UserRepository for FakeRepos {
-    async fn find_by_identity(&self, provider: &str, subject: &str) -> AppResult<Option<User>> {
+    async fn find_by_identity(&self, _provider: &str, _subject: &str) -> AppResult<Option<User>> {
         Ok(self
             .users
             .borrow()
             .iter()
-            .find(|u| {
+            .find(|_u| {
                 // Simple fake: just return the first user for now or implement identity mapping
                 false
             })
@@ -367,6 +367,9 @@ impl UserRepository for FakeRepos {
     }
     async fn add_identity(&self, _user_id: &UserId, _provider: &str, _subject: &str, _email: Option<String>) -> AppResult<()> {
         Ok(())
+    }
+    async fn find_identities(&self, _user_id: &UserId) -> AppResult<Vec<Identity>> {
+        Ok(vec![])
     }
 }
 

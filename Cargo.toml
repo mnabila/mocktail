@@ -50,6 +50,11 @@ anyhow = "1"
 rust-embed = "8"
 mime_guess = "2"
 sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite"] }
+opentelemetry = "0.33"
+opentelemetry_sdk = { version = "0.33", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.33", features = ["grpc-tonic", "metrics", "tokio", "trace"] }
+opentelemetry-prometheus = "0.33"
+tracing-opentelemetry = "0.34"
 
 mocktail-core = { path = "crates/mocktail-core" }
 mocktail-http = { path = "crates/mocktail-http" }

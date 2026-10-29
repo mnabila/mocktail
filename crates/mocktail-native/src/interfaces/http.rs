@@ -9,6 +9,7 @@ use axum::extract::{ConnectInfo, Request, State};
 use axum::http::{Method, StatusCode, header};
 use axum::middleware::Next;
 use axum::response::Response;
+use axum::routing::get;
 use mocktail_core::app::ctx::Ctx;
 use mocktail_http::extract::ClientIp;
 use mocktail_http::router::host_without_port;
@@ -16,13 +17,14 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 
-pub async fn serve(bind: &str, ctx: Arc<Ctx>) -> Result<()> {
+pub async fn serve(bind: &str, ctx: Arc<Ctx>, otel_handle: crate::otel::OtelHandle) -> Result<()> {
     let listener = TcpListener::bind(bind)
         .await
         .with_context(|| format!("binding {bind}"))?;
     tracing::info!(%bind, apex = %ctx.apex_host, "mocktail listening");
 
     let app = mocktail_http::router(ctx.clone())
+        .route("/metrics", get(metrics_handler))
         .layer(axum::middleware::from_fn_with_state(ctx, native_layer));
     axum::serve(
         listener,
@@ -30,6 +32,15 @@ pub async fn serve(bind: &str, ctx: Arc<Ctx>) -> Result<()> {
     )
     .await
     .context("serving HTTP")
+}
+
+async fn metrics_handler() -> Response {
+    let body = crate::otel::get_metrics();
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "text/plain; version=0.0.4")
+        .body(Body::from(body))
+        .unwrap()
 }
 
 /// Add the peer IP, then serve the portal SPA on apex GETs before the router

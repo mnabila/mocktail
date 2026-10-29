@@ -1,9 +1,5 @@
-//! Cloudflare Workers entry point + composition root.
-//!
-//! Builds a `Ctx` backed by D1 and the WASM runtime ports, then calls the shared
-//! axum router. Config comes from Workers vars/secrets.
-
 mod runtime;
+mod otel;
 
 use mocktail_core::app::ctx::{AuthConfig, Ctx};
 use mocktail_core::modules::auth::domain::OAuthProvider;
@@ -22,6 +18,7 @@ async fn fetch(
     env: Env,
     _ctx: Context,
 ) -> Result<axum::http::Response<axum::body::Body>> {
+    let start_time = js_sys::Date::now();
     let ctx = match build_ctx(&env) {
         Ok(c) => c,
         Err(e) => {
@@ -63,6 +60,19 @@ async fn fetch(
         .call(req)
         .await
         .unwrap_or_else(|_| unreachable!("axum router is infallible"));
+    
+    // OTel Push: Send trace to Alloy before returning response.
+    let otel_endpoint = env.var("OTEL_ENDPOINT").unwrap_or_else(|| "http://localhost:4318/v1/traces".to_string());
+    let otel_env = env.var("OTEL_ENVIRONMENT").unwrap_or_else(|| "development".to_string());
+    let otel = otel::OtelWorker::new(otel_endpoint, otel_env);
+    
+    let duration_ms = (js_sys::Date::now() - start_time) as u64;
+    let path = "http.request"; // Simplified for worker
+    
+    // We don't await this if we want to keep latency low, but in Workers, 
+    // we must await or use ctx.waitUntil.
+    let _ = otel.push_trace(path, duration_ms).await;
+
     Ok(response)
 }
 

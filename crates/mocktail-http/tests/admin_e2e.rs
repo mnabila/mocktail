@@ -4,6 +4,7 @@
 mod common;
 
 use common::{admin_json, anon, areq, block_on, body_json, harness, mock_req};
+use mocktail_core::modules::auth::application::UserRepository;
 use mocktail_core::modules::auth::domain::{Identity, User};
 use mocktail_core::shared::http::Method;
 use mocktail_core::shared::ids::UserId;
@@ -259,14 +260,13 @@ fn workspace_update_and_email_invite() {
         // Invite an already-registered account by email.
         h.repos.users.borrow_mut().push(User {
             id: UserId::new("invitee0000000000000001"),
-            providers: vec![Identity {
-                provider: "github".into(),
-                subject: "2".into(),
-                email: Some("invitee@example.com".into()),
-            }],
+            username: "invitee".into(),
             display_name: "Invitee".into(),
             created_at: 0,
         });
+        // Seed the identity for the invitee
+        let invitee_id = UserId::new("invitee0000000000000001");
+        h.repos.add_identity(&invitee_id, "github", "2", Some("invitee@example.com".into())).await.unwrap();
         let resp = handle(
             areq(
                 &h,
@@ -290,14 +290,13 @@ fn workspace_update_and_email_invite() {
         // Ambiguous email => 409 rather than guessing an account.
         h.repos.users.borrow_mut().push(User {
             id: UserId::new("invitee0000000000000002"),
-            providers: vec![Identity {
-                provider: "google".into(),
-                subject: "3".into(),
-                email: Some("invitee@example.com".into()),
-            }],
+            username: "otherinvitee".into(),
             display_name: "Other Invitee".into(),
             created_at: 0,
         });
+        // Seed the identity for the other invitee
+        let other_invitee_id = UserId::new("invitee0000000000000002");
+        h.repos.add_identity(&other_invitee_id, "google", "3", Some("invitee@example.com".into())).await.unwrap();
         let resp = handle(
             areq(
                 &h,

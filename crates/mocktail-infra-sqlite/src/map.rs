@@ -20,7 +20,7 @@ fn corrupt(what: &str, detail: impl std::fmt::Display) -> AppError {
     AppError::Internal(format!("corrupt stored {what}: {detail}"))
 }
 
-// ---- workspace ---------------------------------------------------------------
+// Workspace
 
 pub fn workspace_to_doc(w: &Workspace) -> WorkspaceDoc {
     WorkspaceDoc {
@@ -40,7 +40,7 @@ pub fn workspace_from_doc(d: WorkspaceDoc) -> AppResult<Workspace> {
     })
 }
 
-// ---- collection --------------------------------------------------------------
+// Collection
 
 fn cors_to_doc(p: &CorsPolicy) -> CorsDoc {
     let (any, list) = match &p.allow_origins {
@@ -103,7 +103,7 @@ pub fn collection_from_doc(d: CollectionDoc) -> AppResult<Collection> {
     })
 }
 
-// ---- folder ------------------------------------------------------------------
+// Folder
 
 pub fn folder_to_doc(f: &Folder) -> FolderDoc {
     FolderDoc {
@@ -127,7 +127,7 @@ pub fn folder_from_doc(d: FolderDoc) -> AppResult<Folder> {
     })
 }
 
-// ---- mock --------------------------------------------------------------------
+// Mock
 
 fn matcher_to_doc(m: &RequestMatcher) -> MatcherDoc {
     let (target_type, target_name) = match &m.target {
@@ -264,7 +264,7 @@ pub fn mock_from_doc(d: MockDoc) -> AppResult<Mock> {
     })
 }
 
-// ---- request log -------------------------------------------------------------
+// Request Log
 
 pub fn log_to_doc(l: &RequestLog) -> RequestLogDoc {
     RequestLogDoc {
@@ -323,7 +323,7 @@ pub fn log_from_doc(d: RequestLogDoc) -> AppResult<RequestLog> {
     })
 }
 
-// ---- user --------------------------------------------------------------------
+// User
 
 pub fn user_to_doc(u: &User) -> UserDoc {
     UserDoc {
@@ -343,7 +343,7 @@ pub fn user_from_doc(d: UserDoc) -> AppResult<User> {
     })
 }
 
-// ---- membership --------------------------------------------------------------
+// Membership
 
 pub fn membership_to_doc(m: &Membership) -> MembershipDoc {
     MembershipDoc {

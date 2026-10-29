@@ -6,6 +6,7 @@ mod common;
 use common::{
     APEX, FakeRepos, ScriptedHttp, admin_json, anon, areq, block_on, grant, harness, make_ctx,
 };
+use mocktail_core::modules::auth::application::UserRepository;
 use mocktail_core::modules::auth::domain::{OAuthProvider, new_session};
 use mocktail_core::shared::http::{Headers, Method, Request};
 use mocktail_http::handle;
@@ -253,15 +254,21 @@ fn connect_provider_links_and_rejects_when_taken() {
         // Signed-in user with only a github identity.
         let user = User {
             id: UserId::new("linkuser0000000000000001"),
-            providers: vec![Identity {
-                provider: "github".into(),
-                subject: "1".into(),
-                email: Some("me@example.com".into()),
-            }],
+            username: "me".into(),
             display_name: "Me".into(),
             created_at: 0,
         };
         repos.users.borrow_mut().push(user.clone());
+        // Manually seed identity because User struct no longer holds them
+        repos.add_identity(&user.id, "github", "1", Some("me@example.com".into())).await.unwrap();
+
+        let http = Arc::new(ScriptedHttp {
+            token_body: br#"{"access_token":"at"}"#.to_vec(),
+            userinfo_body: br#"{"sub":"g-new","email":"me@example.com"}"#.to_vec(),
+        });
+        let mut providers = HashMap::new();
+        providers.insert("google".to_string(), google_provider());
+        let ctx = make_ctx(repos.clone(), http, providers);
 
         let http = Arc::new(ScriptedHttp {
             token_body: br#"{"access_token":"at"}"#.to_vec(),
@@ -333,14 +340,14 @@ fn connect_provider_links_and_rejects_when_taken() {
         // A different user already owns a google identity "g-taken".
         repos.users.borrow_mut().push(User {
             id: UserId::new("otheruser0000000000000001"),
-            providers: vec![Identity {
-                provider: "google".into(),
-                subject: "g-taken".into(),
-                email: None,
-            }],
+            username: "other".into(),
             display_name: "Other".into(),
             created_at: 0,
         });
+        // Seed the identity for the other user
+        let other_id = UserId::new("otheruser0000000000000001");
+        repos.add_identity(&other_id, "google", "g-taken", None).await.unwrap();
+
         let http2 = Arc::new(ScriptedHttp {
             token_body: br#"{"access_token":"at"}"#.to_vec(),
             userinfo_body: br#"{"sub":"g-taken","email":"x@example.com"}"#.to_vec(),
@@ -402,6 +409,7 @@ fn google_provider() -> OAuthProvider {
         name: "google".into(),
         client_id: "cid".into(),
         client_secret: "sec".into(),
+        redirect_url: None,
         auth_url: "https://accounts.google.com/o/oauth2/v2/auth".into(),
         token_url: "https://oauth2.googleapis.com/token".into(),
         userinfo_url: "https://openidconnect.googleapis.com/v1/userinfo".into(),

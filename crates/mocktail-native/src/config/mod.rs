@@ -16,6 +16,34 @@ pub struct Config {
     pub server: ServerConfig,
     pub sqlite: SqliteConfig,
     pub auth: AuthConfig,
+    pub otel: OtelConfig,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+pub struct OtelConfig {
+    /// Master switch; false = file logging only, no exporters.
+    pub enabled: bool,
+    /// OTLP/gRPC collector address for traces.
+    pub endpoint: String,
+    /// True for in-cluster gRPC without TLS.
+    pub insecure: bool,
+    /// Parent-based trace sampling ratio (0..1).
+    pub sample_ratio: f64,
+    /// deployment.environment resource attribute.
+    pub environment: String,
+}
+
+impl Default for OtelConfig {
+    fn default() -> Self {
+        OtelConfig {
+            enabled: false,
+            endpoint: "localhost:4317".to_string(),
+            insecure: true,
+            sample_ratio: 1.0,
+            environment: "development".to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]

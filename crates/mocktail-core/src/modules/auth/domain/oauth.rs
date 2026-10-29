@@ -79,6 +79,7 @@ mod tests {
             name: "google".into(),
             client_id: "cid".into(),
             client_secret: "sec".into(),
+            redirect_url: None,
             auth_url: "https://accounts.google.com/o/oauth2/v2/auth".into(),
             token_url: "https://oauth2.googleapis.com/token".into(),
             userinfo_url: "https://openidconnect.googleapis.com/v1/userinfo".into(),

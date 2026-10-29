@@ -39,3 +39,15 @@ auth:
   #   clientId: "..."
   #   clientSecret: "..."
   #   redirectUrl: "https://your-custom-url.com/callback"
+
+otel:
+  # Master switch; false = file logging only, no exporters
+  enabled: true
+  # OTLP/gRPC collector address for traces and metrics
+  endpoint: "localhost:4317"
+  # true for in-cluster gRPC without TLS
+  insecure: true
+  # parent-based trace sampling ratio (0..1)
+  sample_ratio: 1.0
+  # deployment.environment resource attribute
+  environment: "development"

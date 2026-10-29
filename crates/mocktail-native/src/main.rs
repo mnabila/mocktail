@@ -4,6 +4,7 @@
 mod config;
 mod infrastructure;
 mod interfaces;
+mod otel;
 
 use anyhow::{Context, Result};
 use clap::Parser;
@@ -34,15 +35,12 @@ struct Args {
     option: Vec<String>,
 }
 
-fn main() -> Result<()> {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
-        )
-        .init();
+use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Registry};
+use tracing_subscriber::util::SubscriberInitExt;
 
+fn main() -> Result<()> {
     let args = Args::parse();
-    tracing::info!("Starting Mocktail native server...");
+    
     // When no --config is passed, auto-pick ./config.yaml if it exists.
     let config_path = args.config.or_else(|| {
         std::path::Path::new(config::DEFAULT_CONFIG_FILE)
@@ -56,14 +54,35 @@ fn main() -> Result<()> {
     }
     let cfg = config::load(config_path.as_deref(), &args.option)?;
 
+    let (otel_handle, tracing_layer) = otel::init(
+        "mocktail",
+        &cfg.otel,
+    );
+
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into());
+    
+    if let Some(layer) = tracing_layer {
+        tracing_subscriber::registry()
+            .with(layer)
+            .with(filter)
+            .with(fmt::layer())
+            .init();
+    } else {
+        fmt()
+            .with_env_filter(filter)
+            .init();
+    }
+
+    tracing::info!("Starting Mocktail native server...");
+
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .context("building tokio runtime")?;
-    rt.block_on(run(cfg))
+    rt.block_on(run(cfg, otel_handle))
 }
 
-async fn run(cfg: config::Config) -> Result<()> {
+async fn run(cfg: config::Config, otel_handle: otel::OtelHandle) -> Result<()> {
     let providers = config::oauth::build_providers(&cfg.auth);
     if providers.is_empty() {
         tracing::warn!("no OAuth providers configured; the admin API will reject all sign-ins");
@@ -96,7 +115,7 @@ async fn run(cfg: config::Config) -> Result<()> {
         .context("creating SQLite schema")?;
     let ctx = Arc::new(assemble(repos, parts));
 
-    interfaces::http::serve(&cfg.server.bind, ctx).await
+    interfaces::http::serve(&cfg.server.bind, ctx, otel_handle).await
 }
 
 /// Runtime pieces shared by both store backends.
