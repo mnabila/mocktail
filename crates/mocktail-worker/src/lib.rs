@@ -62,8 +62,14 @@ async fn fetch(
         .unwrap_or_else(|_| unreachable!("axum router is infallible"));
     
     // OTel Push: Send trace to Alloy before returning response.
-    let otel_endpoint = env.var("OTEL_ENDPOINT").unwrap_or_else(|| "http://localhost:4318/v1/traces".to_string());
-    let otel_env = env.var("OTEL_ENVIRONMENT").unwrap_or_else(|| "development".to_string());
+    let otel_endpoint = env
+        .var("OTEL_ENDPOINT")
+        .map(|v| v.to_string())
+        .unwrap_or_else(|_| "http://localhost:4318/v1/traces".to_string());
+    let otel_env = env
+        .var("OTEL_ENVIRONMENT")
+        .map(|v| v.to_string())
+        .unwrap_or_else(|_| "development".to_string());
     let otel = otel::OtelWorker::new(otel_endpoint, otel_env);
     
     let duration_ms = (js_sys::Date::now() - start_time) as u64;
@@ -169,6 +175,7 @@ fn build_providers(get: &dyn Fn(&str) -> Option<String>) -> HashMap<String, OAut
     let mut add = |name: &str,
                    id_key: &str,
                    secret_key: &str,
+                   redirect_key: &str,
                    auth_url: &str,
                    token_url: &str,
                    userinfo_url: &str,
@@ -188,7 +195,8 @@ fn build_providers(get: &dyn Fn(&str) -> Option<String>) -> HashMap<String, OAut
                     scopes: scopes.iter().map(|s| s.to_string()).collect(),
                     subject_field: subject_field.to_string(),
                     email_field: email_field.to_string(),
-                    redirect_url: None,
+                    // Optional per-provider override; falls back to the derived callback URL.
+                    redirect_url: get(redirect_key),
                 },
             );
         }
@@ -198,6 +206,7 @@ fn build_providers(get: &dyn Fn(&str) -> Option<String>) -> HashMap<String, OAut
         "google",
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",
+        "GOOGLE_REDIRECT_URL",
         "https://accounts.google.com/o/oauth2/v2/auth",
         "https://oauth2.googleapis.com/token",
         "https://openidconnect.googleapis.com/v1/userinfo",
@@ -209,6 +218,7 @@ fn build_providers(get: &dyn Fn(&str) -> Option<String>) -> HashMap<String, OAut
         "github",
         "GITHUB_CLIENT_ID",
         "GITHUB_CLIENT_SECRET",
+        "GITHUB_REDIRECT_URL",
         "https://github.com/login/oauth/authorize",
         "https://github.com/login/oauth/access_token",
         "https://api.github.com/user",
@@ -220,6 +230,7 @@ fn build_providers(get: &dyn Fn(&str) -> Option<String>) -> HashMap<String, OAut
         "gitlab",
         "GITLAB_CLIENT_ID",
         "GITLAB_CLIENT_SECRET",
+        "GITLAB_REDIRECT_URL",
         "https://gitlab.com/oauth/authorize",
         "https://gitlab.com/oauth/token",
         "https://gitlab.com/oauth/userinfo",

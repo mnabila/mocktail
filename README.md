@@ -112,6 +112,10 @@ Wrangler secrets for credentials:
 | `auth.sessionTtlHours` | Fixed at 168 hours (7 days) |
 | `auth.secureCookies` | Fixed at `true` |
 
+The callback URL defaults to `<PUBLIC_BASE_URL>/auth/{provider}/callback`. To
+override it per provider, set `GOOGLE_REDIRECT_URL` / `GITHUB_REDIRECT_URL` /
+`GITLAB_REDIRECT_URL` (var or secret) and register that URL instead.
+
 A provider is enabled only when both its ID and secret are present. For
 production, set secrets with:
 

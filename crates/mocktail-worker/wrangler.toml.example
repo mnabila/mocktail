@@ -16,6 +16,21 @@ binding = "ASSETS"
 not_found_handling = "single-page-application"
 run_worker_first = true
 
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = false
+persist = true
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+persist = true
+
+[observability.issue_detection]
+enabled = false
+
 # A wildcard route + wildcard cert is required so {workspace}.<apex> resolves
 # to this Worker. Uncomment and replace the domain with your zone:
 # routes = [

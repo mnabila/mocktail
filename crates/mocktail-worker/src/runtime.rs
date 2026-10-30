@@ -98,10 +98,11 @@ impl SqlExecutor for D1Exec {
     ) -> Result<Vec<serde_json::Value>, String> {
         // D1 futures hold JS values, which are !Send. Workers is single-threaded,
         // so the `worker` adapter's SendFuture is the intended bridge.
+        let sql_owned = sql.to_string();
         worker::send::SendFuture::new(async move {
             let stmt = self
                 .db
-                .prepare(sql)
+                .prepare(&sql_owned)
                 .bind(&to_js(&params))
                 .map_err(|e| e.to_string())?;
             let result = stmt.all().await.map_err(|e| e.to_string())?;
@@ -110,19 +111,28 @@ impl SqlExecutor for D1Exec {
                 .map_err(|e| e.to_string())
         })
         .await
+        .map_err(|e: String| {
+            worker::console_error!("D1 query failed: {e} | sql: {sql}");
+            e
+        })
     }
 
     async fn execute(&self, sql: &str, params: Vec<SqlValue>) -> Result<(), String> {
+        let sql_owned = sql.to_string();
         worker::send::SendFuture::new(async move {
             let stmt = self
                 .db
-                .prepare(sql)
+                .prepare(&sql_owned)
                 .bind(&to_js(&params))
                 .map_err(|e| e.to_string())?;
             stmt.run().await.map_err(|e| e.to_string())?;
             Ok(())
         })
         .await
+        .map_err(|e: String| {
+            worker::console_error!("D1 execute failed: {e} | sql: {sql}");
+            e
+        })
     }
 }
 
@@ -159,7 +169,10 @@ impl FetchHttpClient {
         let mut resp = Fetch::Request(req)
             .send()
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| {
+                worker::console_error!("outbound fetch failed: {e} | url: {url}");
+                e.to_string()
+            })?;
         let status = resp.status_code();
         let body = resp.bytes().await.map_err(|e| e.to_string())?;
         Ok(HttpResponse { status, body })

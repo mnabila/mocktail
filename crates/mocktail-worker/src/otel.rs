@@ -87,17 +87,16 @@ impl OtelWorker {
         let body = serde_json::to_string(&request).unwrap_or_default();
         
         // Use worker::Fetch to push the trace to Alloy.
-        let _ = Fetch::new(
-            &self.endpoint,
-            RequestInit {
-                method: Some(Method::Post),
-                body: Some(body.into()),
-                headers: Some(Headers::new().ok().map(|mut h| {
-                    h.set("Content-Type", "application/json").ok();
-                    h
-                })),
-                ..Default::default()
-            },
-        ).await;
+        let headers = Headers::new();
+        let _ = headers.set("Content-Type", "application/json");
+        let init = RequestInit {
+            method: Method::Post,
+            body: Some(body.into()),
+            headers,
+            ..Default::default()
+        };
+        if let Ok(req) = Request::new_with_init(&self.endpoint, &init) {
+            let _ = Fetch::Request(req).send().await;
+        }
     }
 }
