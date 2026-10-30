@@ -16,7 +16,7 @@
   }
 </script>
 
-<div class="flex items-center justify-between">
+<div class="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
   <p class="text-xs text-muted">
     Extra headers sent with the response. <span class="mono">Content-Type</span> comes from the response
     type.

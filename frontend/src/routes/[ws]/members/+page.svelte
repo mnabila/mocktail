@@ -191,6 +191,7 @@
 
 <!-- members table -->
 <div class="card mt-5 overflow-hidden p-0">
+  <div class="overflow-x-auto">
   <table class="tbl">
     <thead>
       <tr>
@@ -245,6 +246,7 @@
       {/if}
     </tbody>
   </table>
+  </div>
 </div>
 
 {#if !loading && !isOwner}

@@ -26,7 +26,9 @@
     bind:value={editing.pathTemplate}
     aria-label="Path template"
   />
-  <button class="reqbar-send" onclick={onSave}><Icon name="check" size={15} /> Save</button>
+  <button class="reqbar-send" onclick={onSave}
+    ><Icon name="check" size={15} /> <span class="reqbar-send-label">Save</span></button
+  >
 </div>
 <p class="mt-1.5 text-xs text-faint">
   Requests matching this method + path template return the response below.
@@ -101,5 +103,20 @@
   }
   .reqbar-send:hover {
     filter: brightness(1.05);
+  }
+  /* tight screens: drop the "Save" label and trim padding so the path field keeps room */
+  @media (max-width: 420px) {
+    .reqbar-send-label {
+      display: none;
+    }
+    .reqbar-url {
+      padding-inline: 0.5rem;
+    }
+    .reqbar-send {
+      padding-inline: 0.75rem;
+    }
+    .reqbar-method-wrap :global(.sel-trigger) {
+      padding-inline: 0.5rem;
+    }
   }
 </style>

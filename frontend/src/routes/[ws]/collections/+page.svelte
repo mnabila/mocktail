@@ -166,6 +166,7 @@
 
 <!-- table -->
 <div class="card mt-5 overflow-hidden p-0">
+  <div class="overflow-x-auto">
   <table class="tbl">
     <thead>
       <tr>
@@ -247,6 +248,7 @@
       {/if}
     </tbody>
   </table>
+  </div>
 
   {#if filtered.length}
     <div class="flex items-center justify-between border-t border-border px-4 py-3 text-sm">

@@ -111,6 +111,7 @@
   </div>
 
   <div class="card p-0">
+    <div class="overflow-x-auto">
     <table class="tbl">
       <thead>
         <tr>
@@ -214,6 +215,7 @@
         {/if}
       </tbody>
     </table>
+    </div>
   </div>
 
   {#if logs.length || logPrevCursors.length}
