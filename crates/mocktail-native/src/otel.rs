@@ -6,7 +6,7 @@ use opentelemetry::{global, metrics::Counter, KeyValue};
 use opentelemetry::trace::TracerProvider;
 use opentelemetry_sdk::Resource;
 use tracing_opentelemetry::OpenTelemetryLayer;
-use opentelemetry_otlp::{WithExportConfig, WithTonicConfig};
+use opentelemetry_otlp::WithExportConfig;
 
 pub struct OtelHandle {
     pub http_requests: Counter<u64>,

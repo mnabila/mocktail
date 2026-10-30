@@ -35,7 +35,7 @@ struct Args {
     option: Vec<String>,
 }
 
-use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Registry};
+use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter};
 use tracing_subscriber::util::SubscriberInitExt;
 
 fn main() -> Result<()> {

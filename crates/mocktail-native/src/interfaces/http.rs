@@ -23,9 +23,32 @@ pub async fn serve(bind: &str, ctx: Arc<Ctx>, otel_handle: crate::otel::OtelHand
         .with_context(|| format!("binding {bind}"))?;
     tracing::info!(%bind, apex = %ctx.apex_host, "mocktail listening");
 
+    let metrics_ctx = ctx.clone();
+    let http_requests = otel_handle.http_requests;
     let app = mocktail_http::router(ctx.clone())
-        .route("/metrics", get(metrics_handler))
-        .layer(axum::middleware::from_fn_with_state(ctx, native_layer));
+        .route(
+            "/metrics",
+            get(move |headers: axum::http::HeaderMap| metrics_handler(metrics_ctx.clone(), headers)),
+        )
+        .layer(axum::middleware::from_fn_with_state(ctx, native_layer))
+        .layer(axum::middleware::from_fn(move |req: Request, next: Next| {
+            let counter = http_requests.clone();
+            async move {
+                let method = req.method().to_string();
+                let response = next.run(req).await;
+                counter.add(
+                    1,
+                    &[
+                        opentelemetry::KeyValue::new("http.method", method),
+                        opentelemetry::KeyValue::new(
+                            "http.status",
+                            response.status().as_u16() as i64,
+                        ),
+                    ],
+                );
+                response
+            }
+        }));
     axum::serve(
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
@@ -34,7 +57,23 @@ pub async fn serve(bind: &str, ctx: Arc<Ctx>, otel_handle: crate::otel::OtelHand
     .context("serving HTTP")
 }
 
-async fn metrics_handler() -> Response {
+async fn metrics_handler(ctx: Arc<Ctx>, headers: axum::http::HeaderMap) -> Response {
+    // /metrics sits outside the router's host guard, so classify here and only
+    // serve it on the admin surface - never on a public workspace host.
+    let host = headers
+        .get(header::HOST)
+        .and_then(|v| v.to_str().ok())
+        .map(host_without_port)
+        .unwrap_or_default();
+    if !matches!(
+        mocktail_http::router::classify(&host, &ctx.apex_host),
+        mocktail_http::router::Surface::Admin
+    ) {
+        return Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .body(Body::empty())
+            .expect("static response");
+    }
     let body = crate::otel::get_metrics();
     Response::builder()
         .status(StatusCode::OK)
