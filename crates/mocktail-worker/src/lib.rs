@@ -188,6 +188,7 @@ fn build_providers(get: &dyn Fn(&str) -> Option<String>) -> HashMap<String, OAut
                     scopes: scopes.iter().map(|s| s.to_string()).collect(),
                     subject_field: subject_field.to_string(),
                     email_field: email_field.to_string(),
+                    redirect_url: None,
                 },
             );
         }

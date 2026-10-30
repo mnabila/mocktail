@@ -38,7 +38,7 @@ impl MockRepository for MockRepositoryImpl {
     async fn list_active(&self, ws: &WorkspaceId, coll: &CollectionId) -> AppResult<Vec<Mock>> {
         let rows = self
             .query(
-                "SELECT id, workspace_id, collection_id, folder_id, method, pathTemplate, matchers, response, priority, delayMs, fault, rateLimit, created_at, updated_at FROM mocks WHERE workspace_id=? AND collection_id=?",
+                "SELECT id, workspace_id, collection_id, folder_id, method, path_template, matchers, response, priority, delay_ms, fault, rate_limit, created_at, updated_at FROM mocks WHERE workspace_id=? AND collection_id=?",
                 vec![
                     SqlValue::Text(ws.as_str().to_string()),
                     SqlValue::Text(coll.as_str().to_string()),
@@ -65,7 +65,7 @@ impl MockRepository for MockRepositoryImpl {
                     .as_str()
                     .ok_or_else(|| AppError::Internal("missing method".into()))?
                     .to_string(),
-                path_template: r["pathTemplate"]
+                path_template: r["path_template"]
                     .as_str()
                     .ok_or_else(|| AppError::Internal("missing pathTemplate".into()))?
                     .to_string(),
@@ -85,12 +85,12 @@ impl MockRepository for MockRepositoryImpl {
                     .as_i64()
                     .ok_or_else(|| AppError::Internal("missing priority".into()))?
                     as i32,
-                delay_ms: r["delayMs"]
+                delay_ms: r["delay_ms"]
                     .as_i64()
                     .ok_or_else(|| AppError::Internal("missing delayMs".into()))?
                     as u32,
                 fault: r["fault"].as_str().map(|s| s.to_string()),
-                rate_limit: r["rateLimit"]
+                rate_limit: r["rate_limit"]
                     .as_str()
                     .and_then(|s| serde_json::from_str(s).ok()),
                 created_at: r["created_at"]
@@ -107,7 +107,7 @@ impl MockRepository for MockRepositoryImpl {
     async fn find_by_id(&self, id: &MockId) -> AppResult<Option<Mock>> {
         let rows = self
             .query(
-                "SELECT id, workspace_id, collection_id, folder_id, method, pathTemplate, matchers, response, priority, delayMs, fault, rateLimit, created_at, updated_at FROM mocks WHERE id=? LIMIT 1",
+                "SELECT id, workspace_id, collection_id, folder_id, method, path_template, matchers, response, priority, delay_ms, fault, rate_limit, created_at, updated_at FROM mocks WHERE id=? LIMIT 1",
                 vec![SqlValue::Text(id.as_str().to_string())],
             )
             .await?;
@@ -131,7 +131,7 @@ impl MockRepository for MockRepositoryImpl {
                         .as_str()
                         .ok_or_else(|| AppError::Internal("missing method".into()))?
                         .to_string(),
-                    path_template: r["pathTemplate"]
+                    path_template: r["path_template"]
                         .as_str()
                         .ok_or_else(|| AppError::Internal("missing pathTemplate".into()))?
                         .to_string(),
@@ -151,12 +151,12 @@ impl MockRepository for MockRepositoryImpl {
                         .as_i64()
                         .ok_or_else(|| AppError::Internal("missing priority".into()))?
                         as i32,
-                    delay_ms: r["delayMs"]
+                    delay_ms: r["delay_ms"]
                         .as_i64()
                         .ok_or_else(|| AppError::Internal("missing delayMs".into()))?
                         as u32,
                     fault: r["fault"].as_str().map(|s| s.to_string()),
-                    rate_limit: r["rateLimit"]
+                    rate_limit: r["rate_limit"]
                         .as_str()
                         .and_then(|s| serde_json::from_str(s).ok()),
                     created_at: r["created_at"]

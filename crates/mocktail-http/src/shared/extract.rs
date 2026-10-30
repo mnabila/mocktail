@@ -24,7 +24,9 @@ where
         _state: &S,
     ) -> Result<Self, Self::Rejection> {
         let (parts, body) = req.into_parts();
-        let body = to_bytes(body, usize::MAX)
+        // Cap inbound bodies so an unauthenticated client can't OOM the server.
+        const MAX_BODY: usize = 16 * 1024 * 1024;
+        let body = to_bytes(body, MAX_BODY)
             .await
             .map_err(|_| StatusCode::BAD_REQUEST.into_response())?;
 

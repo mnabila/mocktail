@@ -271,7 +271,9 @@ fn parse_mock(
     )?;
 
     let priority = Priority(body.get("priority").and_then(Value::as_i64).unwrap_or(0) as i32);
-    let delay_ms = body.get("delayMs").and_then(Value::as_u64).unwrap_or(0) as u32;
+    // Clamp to 5 minutes: a configured delay pins a connection on the public
+    // mock surface, so an unbounded value is a stored DoS.
+    let delay_ms = body.get("delayMs").and_then(Value::as_u64).unwrap_or(0).min(300_000) as u32;
     let fault = match body.get("fault").and_then(Value::as_str) {
         Some("connectionReset") => Some(Fault::ConnectionReset),
         Some("malformedResponse") => Some(Fault::MalformedResponse),
@@ -345,8 +347,13 @@ fn parse_response(v: &Value) -> AppResult<ResponseSpec> {
     let status = v
         .get("status")
         .and_then(Value::as_u64)
-        .ok_or_else(|| AppError::BadRequest("response.status is required".into()))?
-        as u16;
+        .ok_or_else(|| AppError::BadRequest("response.status is required".into()))?;
+    if !(100..=599).contains(&status) {
+        return Err(AppError::BadRequest(
+            "response.status must be 100-599".into(),
+        ));
+    }
+    let status = status as u16;
     let mut headers = parse_headers(v.get("headers"))?;
     if let Some(content_type) = v
         .get("contentType")

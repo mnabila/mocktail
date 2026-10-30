@@ -229,15 +229,23 @@ fn parse_cors(v: &Value) -> AppResult<CorsPolicy> {
             _ => fallback,
         }
     };
+    let allow_credentials = v
+        .get("allowCredentials")
+        .and_then(Value::as_bool)
+        .unwrap_or(default.allow_credentials);
+    // Reflecting any origin while allowing credentials is the classic CORS
+    // footgun; refuse the combination rather than store it.
+    if allow_credentials && matches!(allow_origins, AllowOrigins::Any) {
+        return Err(AppError::BadRequest(
+            "allowCredentials cannot be combined with wildcard allowOrigins \"*\"".into(),
+        ));
+    }
     Ok(CorsPolicy {
         allow_origins,
         allow_methods: str_list("allowMethods", default.allow_methods),
         allow_headers: str_list("allowHeaders", default.allow_headers),
         expose_headers: str_list("exposeHeaders", default.expose_headers),
-        allow_credentials: v
-            .get("allowCredentials")
-            .and_then(Value::as_bool)
-            .unwrap_or(default.allow_credentials),
+        allow_credentials,
         max_age_secs: v
             .get("maxAgeSecs")
             .and_then(Value::as_u64)

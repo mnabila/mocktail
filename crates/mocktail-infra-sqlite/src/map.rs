@@ -369,19 +369,19 @@ mod tests {
 
     fn legacy_mock(rate_limit: serde_json::Value) -> MockDoc {
         serde_json::from_value(serde_json::json!({
-            "_id": "m1",
-            "workspaceId": "w1",
-            "collectionId": "c1",
+            "id": "m1",
+            "workspace_id": "w1",
+            "collection_id": "c1",
             "method": "GET",
-            "pathTemplate": "/ping",
+            "path_template": "/ping",
             "matchers": [],
             "response": {"status": 200, "headers": [], "body": "pong"},
             "priority": 0,
-            "delayMs": 0,
+            "delay_ms": 0,
             "fault": null,
-            "rateLimit": rate_limit,
-            "createdAt": 1,
-            "updatedAt": 2
+            "rate_limit": rate_limit,
+            "created_at": 1,
+            "updated_at": 2
         }))
         .unwrap()
     }
@@ -415,15 +415,15 @@ mod tests {
     #[test]
     fn legacy_request_log_documents_load() {
         let doc: RequestLogDoc = serde_json::from_value(serde_json::json!({
-            "_id": "l1",
-            "requestId": "r1",
-            "workspaceId": "w1",
-            "collectionId": null,
-            "receivedAt": 1,
+            "id": "l1",
+            "request_id": "r1",
+            "workspace_id": "w1",
+            "collection_id": null,
+            "received_at": 1,
             "method": "GET",
             "path": "/ping",
-            "matchedMockId": null,
-            "matchReason": null,
+            "matched_mock_id": null,
+            "match_reason": null,
             "status": 204
         }))
         .unwrap();

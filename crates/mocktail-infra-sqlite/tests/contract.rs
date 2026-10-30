@@ -261,6 +261,9 @@ async fn sqlite_round_trips_all_ports() {
         created_at: 1,
     };
     UserRepository::insert(&repo, &user).await.unwrap();
+    UserRepository::add_identity(&repo, &UserId::new("u1"), "github", "42", None)
+        .await
+        .unwrap();
     assert_eq!(
         UserRepository::find_by_identity(&repo, "github", "42")
             .await

@@ -73,7 +73,7 @@ impl RequestLogRepository for RequestLogRepositoryImpl {
     ) -> AppResult<Option<RequestLog>> {
         let rows = self
             .query(
-                "SELECT id, request_id, workspace_id, collection_id, received_at, method, path, requestHeaders, requestBody, matchedMockId, matchReason, status, response, ip, country, lat, lng FROM request_logs WHERE workspace_id=? AND request_id=? LIMIT 1",
+                "SELECT id, request_id, workspace_id, collection_id, received_at, method, path, requestheaders AS requestHeaders, requestbody AS requestBody, matchedmockid AS matchedMockId, matchreason AS matchReason, status, response, ip, country, lat, lng FROM request_logs WHERE workspace_id=? AND request_id=? LIMIT 1",
                 vec![
                     SqlValue::Text(ws.as_str().to_string()),
                     SqlValue::Text(request_id.as_str().to_string()),
@@ -147,7 +147,7 @@ impl RequestLogRepository for RequestLogRepositoryImpl {
     ) -> AppResult<Vec<RequestLog>> {
         let (sql, params) = match coll {
             Some(c) => (
-                "SELECT id, request_id, workspace_id, collection_id, received_at, method, path, requestHeaders, requestBody, matchedMockId, matchReason, status, response, ip, country, lat, lng FROM request_logs WHERE workspace_id=? AND collection_id=? ORDER BY received_at DESC LIMIT ?",
+                "SELECT id, request_id, workspace_id, collection_id, received_at, method, path, requestheaders AS requestHeaders, requestbody AS requestBody, matchedmockid AS matchedMockId, matchreason AS matchReason, status, response, ip, country, lat, lng FROM request_logs WHERE workspace_id=? AND collection_id=? ORDER BY received_at DESC, id DESC LIMIT ?",
                 vec![
                     SqlValue::Text(ws.as_str().to_string()),
                     SqlValue::Text(c.as_str().to_string()),
@@ -155,7 +155,7 @@ impl RequestLogRepository for RequestLogRepositoryImpl {
                 ],
             ),
             None => (
-                "SELECT id, request_id, workspace_id, collection_id, received_at, method, path, requestHeaders, requestBody, matchedMockId, matchReason, status, response, ip, country, lat, lng FROM request_logs WHERE workspace_id=? ORDER BY received_at DESC LIMIT ?",
+                "SELECT id, request_id, workspace_id, collection_id, received_at, method, path, requestheaders AS requestHeaders, requestbody AS requestBody, matchedmockid AS matchedMockId, matchreason AS matchReason, status, response, ip, country, lat, lng FROM request_logs WHERE workspace_id=? ORDER BY received_at DESC LIMIT ?",
                 vec![
                     SqlValue::Text(ws.as_str().to_string()),
                     SqlValue::I64(limit as i64),
@@ -223,7 +223,7 @@ impl RequestLogRepository for RequestLogRepositoryImpl {
     }
     async fn page(&self, ws: &WorkspaceId, q: &LogQuery<'_>) -> AppResult<Vec<RequestLog>> {
         let mut sql = String::from(
-            "SELECT id, request_id, workspace_id, collection_id, received_at, method, path, requestHeaders, requestBody, matchedMockId, matchReason, status, response, ip, country, lat, lng FROM request_logs WHERE workspace_id=?",
+            "SELECT id, request_id, workspace_id, collection_id, received_at, method, path, requestheaders AS requestHeaders, requestbody AS requestBody, matchedmockid AS matchedMockId, matchreason AS matchReason, status, response, ip, country, lat, lng FROM request_logs WHERE workspace_id=?",
         );
         let mut params: Vec<SqlValue> = vec![SqlValue::Text(ws.as_str().to_string())];
         if let Some(c) = q.coll {
@@ -235,7 +235,7 @@ impl RequestLogRepository for RequestLogRepositoryImpl {
                 .replace('\\', "\\\\")
                 .replace('%', r"\%")
                 .replace('_', r"\_");
-            sql.push_str(" AND path LIKE ? ESCAPE '\'");
+            sql.push_str(" AND path LIKE ? ESCAPE '\\'");
             params.push(SqlValue::Text(format!("%{escaped}%")));
         }
         if let Some(s) = q.status {

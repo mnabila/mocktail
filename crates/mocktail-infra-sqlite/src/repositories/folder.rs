@@ -38,7 +38,7 @@ impl FolderRepository for FolderRepositoryImpl {
     async fn list(&self, ws: &WorkspaceId, coll: &CollectionId) -> AppResult<Vec<Folder>> {
         let rows = self
             .query(
-                "SELECT id, workspace_id, collection_id, name, parentId, created_at FROM folders WHERE workspace_id=? AND collection_id=?",
+                "SELECT id, workspace_id, collection_id, name, parent_id, created_at FROM folders WHERE workspace_id=? AND collection_id=?",
                 vec![
                     SqlValue::Text(ws.as_str().to_string()),
                     SqlValue::Text(coll.as_str().to_string()),
@@ -64,7 +64,7 @@ impl FolderRepository for FolderRepositoryImpl {
                     .as_str()
                     .ok_or_else(|| AppError::Internal("missing name".into()))?
                     .to_string(),
-                parent_id: r["parentId"].as_str().map(|s| s.to_string()),
+                parent_id: r["parent_id"].as_str().map(|s| s.to_string()),
                 created_at: r["created_at"]
                     .as_i64()
                     .ok_or_else(|| AppError::Internal("missing created_at".into()))?,
@@ -76,7 +76,7 @@ impl FolderRepository for FolderRepositoryImpl {
     async fn find_by_id(&self, id: &FolderId) -> AppResult<Option<Folder>> {
         let rows = self
             .query(
-                "SELECT id, workspace_id, collection_id, name, parentId, created_at FROM folders WHERE id=? LIMIT 1",
+                "SELECT id, workspace_id, collection_id, name, parent_id, created_at FROM folders WHERE id=? LIMIT 1",
                 vec![SqlValue::Text(id.as_str().to_string())],
             )
             .await?;
@@ -99,7 +99,7 @@ impl FolderRepository for FolderRepositoryImpl {
                         .as_str()
                         .ok_or_else(|| AppError::Internal("missing name".into()))?
                         .to_string(),
-                    parent_id: r["parentId"].as_str().map(|s| s.to_string()),
+                    parent_id: r["parent_id"].as_str().map(|s| s.to_string()),
                     created_at: r["created_at"]
                         .as_i64()
                         .ok_or_else(|| AppError::Internal("missing created_at".into()))?,
@@ -112,7 +112,7 @@ impl FolderRepository for FolderRepositoryImpl {
     async fn insert(&self, folder: &Folder) -> AppResult<()> {
         let doc = map::folder_to_doc(folder);
         self.execute(
-            "INSERT INTO folders(id,workspace_id,collection_id,name,parentId,created_at) VALUES(?,?,?,?,?,?)",
+            "INSERT INTO folders(id,workspace_id,collection_id,name,parent_id,created_at) VALUES(?,?,?,?,?,?)",
             vec![
                 SqlValue::Text(doc.id),
                 SqlValue::Text(doc.workspace_id),

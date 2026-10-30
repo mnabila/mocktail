@@ -3,7 +3,7 @@
 use crate::http::auth::oauth::current_session;
 use mocktail_core::app::ctx::Ctx;
 use mocktail_core::modules::auth::application as auth_app;
-use mocktail_core::modules::auth::domain::{Role, SessionClaims, User};
+use mocktail_core::modules::auth::domain::{Role, SessionClaims, User, constant_time_eq};
 use mocktail_core::modules::collection::application as coll_app;
 use mocktail_core::modules::mock::application as mock_app;
 use mocktail_core::shared::error::{AppError, AppResult};
@@ -51,7 +51,7 @@ fn enforce_csrf(req: &Request, actor: &Actor) -> AppResult<()> {
         return Ok(());
     }
     match req.headers.get("x-csrf-token") {
-        Some(t) if t == actor.claims.csrf => Ok(()),
+        Some(t) if constant_time_eq(t.as_bytes(), actor.claims.csrf.as_bytes()) => Ok(()),
         _ => Err(AppError::Forbidden("missing or invalid CSRF token".into())),
     }
 }

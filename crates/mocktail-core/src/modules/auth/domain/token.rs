@@ -60,7 +60,7 @@ fn signing_input(label: &[u8], body: &[u8]) -> Vec<u8> {
     v
 }
 
-fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+pub fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
     if a.len() != b.len() {
         return false;
     }
