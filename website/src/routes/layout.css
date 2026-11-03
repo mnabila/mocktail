@@ -1,0 +1,128 @@
+@import 'tailwindcss';
+
+@theme {
+	--breakpoint-md: 760px;
+	--breakpoint-lg: 1000px;
+
+	--color-page: #f7f7f8;
+	--color-tile: #ffffff;
+	--color-surface: #f4f4f5;
+	--color-ink: #1c1c1e;
+	--color-muted: #5a5a63;
+	--color-accent: #f6821f;
+	--color-dark: #17181c;
+	--color-dark-2: #1f2127;
+	--color-dark-ink: #ececee;
+	--color-dark-muted: #a1a1aa;
+	--color-line: #e4e4e7;
+	--color-line-strong: #d4d4d8;
+	--color-dark-line: #30333c;
+	--color-danger: #d92d20;
+
+	--font-display: 'Libre Franklin', 'Helvetica Neue', Arial, sans-serif;
+	--font-text: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+	--font-mono: ui-monospace, 'SFMono-Regular', 'Cascadia Code', 'Liberation Mono', Menlo, monospace;
+
+	--text-body: 1.125rem;
+	--text-lead: 1.5rem;
+	--text-head: clamp(2.5rem, 4.5vw, 4rem);
+
+	--animate-live: live 2.4s ease-in-out infinite;
+	--animate-shutter: shutter 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) 0.15s both;
+	--animate-settle: settle 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) 0.15s both;
+
+	@keyframes live {
+		50% {
+			opacity: 0.35;
+		}
+	}
+
+	@keyframes shutter {
+		from {
+			clip-path: inset(0 100% 0 0);
+		}
+		to {
+			clip-path: inset(0 0 0 0);
+		}
+	}
+
+	@keyframes settle {
+		from {
+			transform: scale(1.12);
+		}
+		to {
+			transform: scale(1);
+		}
+	}
+}
+
+@layer base {
+	html {
+		scroll-behavior: smooth;
+	}
+
+	body {
+		@apply bg-page font-text text-body text-ink antialiased;
+		text-rendering: optimizeLegibility;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4 {
+		@apply font-display leading-[0.98] font-bold tracking-[-0.035em];
+	}
+
+	button {
+		cursor: pointer;
+	}
+
+	code,
+	pre {
+		@apply font-mono;
+	}
+
+	::selection {
+		@apply bg-accent text-ink;
+	}
+
+	:focus-visible {
+		outline: 2px solid currentColor;
+		outline-offset: 3px;
+	}
+}
+
+/* Reveal is toggled by IntersectionObserver + a no-JS fallback timer in app.html. */
+.js .reveal {
+	opacity: 0;
+	transform: translateY(18px);
+	transition:
+		opacity 0.55s ease var(--d, 0ms),
+		transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) var(--d, 0ms);
+}
+
+.js .reveal.is-in {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.001ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.001ms !important;
+		scroll-behavior: auto !important;
+	}
+
+	.js .reveal {
+		opacity: 1;
+		transform: none;
+		transition: none;
+	}
+}
