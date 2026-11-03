@@ -2,7 +2,6 @@
   // Lucide-style 24x24 stroke icons (ISC). One consistent family + stroke
   // width across the app (no emoji as icons - UI/UX rule §4).
   const PATHS: Record<string, string> = {
-    martini: 'M8 22h8 M12 11v11 M3 3l9 8 9-8 M3 3h18',
     plus: 'M5 12h14 M12 5v14',
     copy: 'M9 9h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V11a2 2 0 0 1 2-2z M5 15H4a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1',
     check: 'M20 6 9 17l-5-5',

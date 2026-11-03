@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from '$lib/components/ui/Icon.svelte';
+  import Logo from '$lib/components/ui/Logo.svelte';
   // SSO only. Full-page navigations to the Rust /auth routes.
   const providers: Array<{ id: string; label: string }> = [
     { id: 'google', label: 'Continue with Google' },
@@ -17,7 +18,7 @@
       <span
         class="mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface text-accent"
       >
-        <Icon name="martini" size={26} />
+        <Logo size={26} />
       </span>
       <h1 class="text-2xl font-semibold tracking-tight">mocktail</h1>
       <p class="mt-1 text-sm text-muted">Mock APIs, fast.</p>

@@ -86,12 +86,33 @@ npx wrangler secret put SESSION_SECRET   # deploys a new version
 
 `npm run deploy` builds the SvelteKit portal into `frontend/build` and uploads
 it with the Worker as static assets; the Worker serves it on the admin host
-with SPA fallback. Set `APEX_HOST`/`PUBLIC_BASE_URL` in `wrangler.toml` and
-uncomment the wildcard route for your zone. Without a route, use the Worker's
+with SPA fallback. Set `APEX_HOST`/`PUBLIC_BASE_URL` in `wrangler.toml` and the
+matching `routes` for your zone. Without a route, use the Worker's
 `<name>.<account>.workers.dev` hostname as `APEX_HOST`; workspace subdomains
 require the route. Requests are host-routed: admin on the apex host, mocks on
 `{workspace}.<APEX_HOST>` (requires wildcard DNS + TLS). Register OAuth
 callbacks as `<PUBLIC_BASE_URL>/auth/{provider}/callback`.
+
+#### DNS and routes
+
+To serve on a custom domain, the zone (`mnabila.my.id` in the sample) must use
+Cloudflare nameservers. Point `routes` in `wrangler.toml` at your admin host and
+its wildcard, then add two **proxied** (orange-cloud) DNS records in the
+Cloudflare dashboard so both resolve to the Worker:
+
+| Type   | Name                      | Content | Proxy   |
+| ------ | ------------------------- | ------- | ------- |
+| `AAAA` | `mocktail` (admin host)   | `100::` | Proxied |
+| `AAAA` | `*.mocktail` (workspaces) | `100::` | Proxied |
+
+`100::` is Cloudflare's discard address; the orange-cloud proxy makes the Worker
+route take over before the origin is ever hit. Workspace hosts
+(`{workspace}.mocktail.mnabila.my.id`) are sub-subdomains, which **Universal SSL
+does not cover** - enable [Advanced Certificate Manager][acm] (or Total TLS) so
+`*.mocktail.mnabila.my.id` gets a wildcard cert. A plain apex host
+(`example.com` + `*.example.com`) is covered by Universal SSL and needs no ACM.
+
+[acm]: https://developers.cloudflare.com/ssl/edge-certificates/advanced-certificate-manager/
 
 #### Worker configuration
 
@@ -99,18 +120,18 @@ The Worker does not read `config.yaml`; that file is only used by the native
 binary and Docker image. Use `[vars]` in `wrangler.toml` for non-secrets and
 Wrangler secrets for credentials:
 
-| `config.yaml` | Worker |
-| --- | --- |
-| `server.adminHost` | `APEX_HOST` (var; hostname only, no scheme) |
-| `server.publicBaseUrl` | `PUBLIC_BASE_URL` (var; full URL) |
-| `auth.sessionSecret` | `SESSION_SECRET` (secret, required) |
-| `auth.google.clientId` / `clientSecret` | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` |
-| `auth.github.clientId` / `clientSecret` | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` |
-| `auth.gitlab.clientId` / `clientSecret` | `GITLAB_CLIENT_ID` / `GITLAB_CLIENT_SECRET` |
-| `server.bind` | Not used; Cloudflare provides the HTTP endpoint |
-| `sqlite.path` | Not used; D1 binding `DB` in `wrangler.toml` |
-| `auth.sessionTtlHours` | Fixed at 168 hours (7 days) |
-| `auth.secureCookies` | Fixed at `true` |
+| `config.yaml`                           | Worker                                          |
+| --------------------------------------- | ----------------------------------------------- |
+| `server.adminHost`                      | `APEX_HOST` (var; hostname only, no scheme)     |
+| `server.publicBaseUrl`                  | `PUBLIC_BASE_URL` (var; full URL)               |
+| `auth.sessionSecret`                    | `SESSION_SECRET` (secret, required)             |
+| `auth.google.clientId` / `clientSecret` | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`     |
+| `auth.github.clientId` / `clientSecret` | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`     |
+| `auth.gitlab.clientId` / `clientSecret` | `GITLAB_CLIENT_ID` / `GITLAB_CLIENT_SECRET`     |
+| `server.bind`                           | Not used; Cloudflare provides the HTTP endpoint |
+| `sqlite.path`                           | Not used; D1 binding `DB` in `wrangler.toml`    |
+| `auth.sessionTtlHours`                  | Fixed at 168 hours (7 days)                     |
+| `auth.secureCookies`                    | Fixed at `true`                                 |
 
 The callback URL defaults to `<PUBLIC_BASE_URL>/auth/{provider}/callback`. To
 override it per provider, set `GOOGLE_REDIRECT_URL` / `GITHUB_REDIRECT_URL` /

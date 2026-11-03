@@ -16,6 +16,7 @@
   import type { Collection, CollectionTree, Folder, Mock, Workspace } from '$lib/types/domain';
   import { methodTextColor } from '$lib/utils/http';
   import Icon from '$lib/components/ui/Icon.svelte';
+  import Logo from '$lib/components/ui/Logo.svelte';
 
   interface Props {
     currentWs?: string | null;
@@ -361,7 +362,7 @@
   class="flex h-14 shrink-0 items-center gap-1.5 border-b border-border px-4 font-semibold tracking-tight text-fg"
   onclick={closeMobileNav}
 >
-  <span class="text-accent"><Icon name="martini" size={20} /></span> mocktail
+  <span class="text-accent"><Logo size={20} /></span> mocktail
 </a>
 
 <!-- search -->
