@@ -1,56 +1,89 @@
 # Mocktail
 
-Self-hostable API mocking service in Rust (edition 2024) with an embedded SvelteKit admin portal. Runs as a single native binary with SQLite or on Cloudflare Workers + D1 from the same core.
+Self-hostable API mocking in a single Rust binary. Point your app at Mocktail
+instead of a real or not-yet-built backend: match incoming requests, return
+templated responses, replay OpenAPI specs, inject faults, and inspect every
+call. No account, no hosted service, no monthly bill - your mocks and logs stay
+on your hardware.
+
+The same core runs two ways: a native binary backed by SQLite (one file, no
+external database), or Cloudflare Workers backed by D1. An embedded SvelteKit
+admin portal ships inside both.
 
 ## Features
 
-- **Workspaces & Collections**: Host-routed workspaces (`{workspace}.<adminHost>/{collection}/...`) with RBAC (`owner`, `editor`, `viewer`).
-- **Request Matching & Templating**: Match by method, path (`:param` / `{param}`), query, headers, and body (exact, regex, JSON subset). Dynamic response templates (`{{path.x}}`, `{{query.x}}`, `{{header.x}}`, `{{body}}`), delays, and fault injection.
-- **OpenAPI 2.0 / 3.x**: Import specs (JSON/YAML) with diff preview and round-trip re-import, or export collections.
-- **SSO Auth**: Google, GitHub, and GitLab OAuth2/OIDC with explicit account linking.
-- **Request Logs**: Inspect matched and unmatched traffic per workspace.
+- **Workspaces & collections** - Host-routed workspaces
+  (`{workspace}.<adminHost>/{collection}/...`) with RBAC (`owner`, `editor`,
+  `viewer`).
+- **Request matching** - Match by method, path (`:param` / `{param}`), query,
+  headers, and body (exact, regex, JSON subset), with deterministic precedence.
+- **Response templating** - Build responses from the request itself:
+  `{{path.x}}`, `{{query.x}}`, `{{header.x}}`, `{{body}}`.
+- **Faults & delays** - Inject latency, malformed bodies, and connection resets
+  to test how your app handles a failing upstream.
+- **OpenAPI 2.0 / 3.x** - Import specs (JSON/YAML) with diff preview and
+  round-trip re-import, or export a collection back out.
+- **SSO auth** - Google, GitHub, and GitLab OAuth2/OIDC with explicit account
+  linking (never auto-merge by email).
+- **Request logs** - Inspect matched and unmatched traffic per workspace.
 
 ## Quickstart
 
-### Local Development
+The Makefile, Dockerfile, and example config live in the native crate, so run
+the local commands from there:
 
-Requires Rust (edition 2024) and Node.js 22+.
+```bash
+cd crates/mocktail-native
+```
+
+### Local development
+
+Requires Rust (edition 2024) and Node.js 22+. One command builds the SvelteKit
+portal and starts the server:
 
 ```bash
 make dev
 ```
 
-Builds the frontend into `frontend/build` and starts the server at `http://localhost:8787` backed by `mocktail.db`.
+This serves the portal, admin API, and mock runtime on
+`http://localhost:8787`, backed by `mocktail.db` (SQLite). With no `config.yaml`
+present, `make` falls back to zero-config dev overrides (SQLite + plain-HTTP
+cookies). Run `make help` to list every target (`build`, `release`, `test`,
+`lint`, `wasm`, `docker`, ...).
 
-For frontend HMR against a running backend:
+For frontend hot-reload against a running backend:
 
 ```bash
-make run                  # terminal 1: backend on :8787
-cd frontend && npm run dev # terminal 2: Vite dev server (set MOCKTAIL_API_URL=http://localhost:8787)
+make run                                                    # terminal 1: backend on :8787
+cd ../../frontend && MOCKTAIL_API_URL=http://localhost:8787 npm run dev  # terminal 2: Vite dev server
 ```
 
 ### Configuration
 
-Copy [`example.config.yaml`](example.config.yaml) to `config.yaml`, or pass `-o key=value` overrides:
+Copy [`example.config.yaml`](crates/mocktail-native/example.config.yaml) to
+`config.yaml` and edit it, or override any dotted key per run with `-o`:
 
 ```bash
 cargo run -p mocktail-native -- --config config.yaml -o auth.sessionSecret="$SECRET"
 ```
 
+Admin sign-in needs at least one SSO provider configured plus
+`auth.sessionSecret`. For plain-HTTP local access, set
+`server.adminHost: localhost`, `server.publicBaseUrl: http://localhost:8787`,
+and `auth.secureCookies: false`.
+
 ### Docker
 
 ```bash
+cd crates/mocktail-native
 cp example.config.yaml config.yaml   # set adminHost/publicBaseUrl and SSO credentials
 docker compose up --build
 ```
 
-For plain-HTTP local access, set `server.adminHost: localhost`,
-`server.publicBaseUrl: http://localhost:8787`, and `auth.secureCookies: false`
-in `config.yaml` before starting. Admin sign-in needs at least one SSO provider
-with `auth.sessionSecret` set. This builds the image from the local
-[`Dockerfile`](Dockerfile) and serves on `http://localhost:8787`. SQLite state
-persists on the `mocktail-data` volume (`docker compose down -v` removes it).
-`make docker` builds the image without starting it.
+Builds the image from the local [`Dockerfile`](crates/mocktail-native/Dockerfile)
+and serves on `http://localhost:8787`. SQLite state persists on the
+`mocktail-data` volume (`docker compose down -v` removes it). `make docker`
+builds the image without starting it.
 
 ### Cloudflare Workers
 
@@ -151,6 +184,9 @@ Locally, put the same names in `.dev.vars` (see `.dev.vars.example`). Changing
 version immediately.
 
 ## Checks
+
+From `crates/mocktail-native`, `make check` runs everything (fmt, lint, test,
+and the WASM-clean gate). Or run them directly:
 
 ```bash
 cargo fmt --all -- --check
