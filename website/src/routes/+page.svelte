@@ -163,12 +163,12 @@
 {/snippet}
 
 <svelte:head>
-	<title>Mocktail — Self-hostable API mocking in Rust</title>
+	<title>Mocktail: Self-hostable API mocking in Rust</title>
 	<meta
 		name="description"
 		content="Define matches, template responses, import OpenAPI, and inspect every request. Self-hostable API mocking in one Rust binary, on SQLite or Cloudflare D1."
 	/>
-	<meta property="og:title" content="Mocktail — Self-hostable API mocking in Rust" />
+	<meta property="og:title" content="Mocktail: Self-hostable API mocking in Rust" />
 	<meta
 		property="og:description"
 		content="Define matches, template responses, import OpenAPI, and inspect every request. One binary, SQLite or D1."
@@ -359,7 +359,7 @@
 					</h2>
 				</div>
 				<p class="max-w-[34ch] font-mono text-[13px] leading-[1.6] text-muted">
-					One server, no sidecars. Matching, templating, import, faults and logs — all built in.
+					One server, no sidecars. Matching, templating, import, faults and logs, all built in.
 				</p>
 			</div>
 
