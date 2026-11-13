@@ -89,8 +89,8 @@ impl Headers {
     }
 }
 
-/// A normalized inbound request. `host` resolves apex-admin vs the
-/// `{workspace}.apex` mock surface.
+/// A normalized inbound request. `host` resolves apex-admin vs the configured
+/// `{workspace}<separator>apex` mock surface.
 #[derive(Clone, Debug)]
 pub struct Request {
     pub method: Method,

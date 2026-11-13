@@ -12,7 +12,7 @@
   } from '$lib/api/query';
   import { wsIdFromSlug } from '$lib/state/session.svelte';
   import { toast } from '$lib/state/toast.svelte';
-  import { slugify } from '$lib/utils/format';
+  import { slugify, workspaceSeparator } from '$lib/utils/format';
   import type { Workspace, WorkspaceRole } from '$lib/types/domain';
   import Icon from '$lib/components/ui/Icon.svelte';
 
@@ -146,7 +146,9 @@
         <p class="text-xs text-faint">
           Mock URLs resolve at
           <span class="mono text-muted">
-            {slugPreview}.{typeof location !== 'undefined' ? location.host : 'mocktail'}
+            {slugPreview}{workspaceSeparator()}{typeof location !== 'undefined'
+              ? location.host
+              : 'mocktail'}
           </span>. Changing this breaks existing mock URLs.
         </p>
       </div>

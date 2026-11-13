@@ -553,6 +553,7 @@ pub fn make_ctx(
 ) -> Arc<Ctx> {
     Arc::new(Ctx {
         apex_host: APEX.to_string(),
+        workspace_separators: ".-".to_string(),
         workspaces: repos.clone(),
         collections: repos.clone(),
         folders: repos.clone(),

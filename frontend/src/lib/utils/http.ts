@@ -1,6 +1,7 @@
 // Shared HTTP method badges, status color tones, and request log code generators.
 
 import type { RequestLog } from '$lib/types/domain';
+import { workspaceSeparator } from './format';
 
 export const methodClass = (m?: string | null): string =>
   `method method-${(m ?? 'get').toLowerCase()}`;
@@ -21,7 +22,7 @@ export const statusTone = (s: number): string =>
 
 export function logUrl(wsSlug: string, l: Pick<RequestLog, 'path'>): string {
   if (typeof location === 'undefined') return l.path;
-  return `${location.protocol}//${wsSlug}.${location.host}${l.path}`;
+  return `${location.protocol}//${wsSlug}${workspaceSeparator()}${location.host}${l.path}`;
 }
 
 // Shell single-quote escaping: close quote, add escaped ', reopen.

@@ -1,5 +1,5 @@
 //! Workspace aggregate. A workspace is the ownership
-//! boundary and resolves as a subdomain on the mock surface.
+//! boundary and resolves as a separator-delimited host on the mock surface.
 
 use crate::shared::ids::{Slug, WorkspaceId};
 use crate::shared::ports::UnixMillis;

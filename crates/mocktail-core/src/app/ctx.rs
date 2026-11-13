@@ -13,6 +13,24 @@ use crate::shared::ports::{Clock, HttpClient, IdGenerator, RateLimiter, Signer, 
 use std::collections::HashMap;
 use std::sync::Arc;
 
+/// Default separator set: dot form only (`{workspace}.{apex}`).
+pub const DEFAULT_WORKSPACE_SEPARATORS: &str = ".";
+
+/// Validate and normalize the configured workspace/apex separators. Accepts a
+/// non-empty subset of `.` and `-`, e.g. `".-"` for both host forms.
+pub fn parse_workspace_separators(raw: &str) -> Result<String, String> {
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return Err("workspace separators must not be empty".into());
+    }
+    if let Some(bad) = raw.chars().find(|&c| !matches!(c, '.' | '-')) {
+        return Err(format!(
+            "workspace separators must contain only '.' or '-' (got {bad:?})"
+        ));
+    }
+    Ok(raw.to_string())
+}
+
 /// Auth configuration resolved from operator config.
 pub struct AuthConfig {
     /// Enabled OAuth providers, keyed by name (`google`/`github`/`gitlab`).
@@ -30,6 +48,8 @@ pub struct AuthConfig {
 pub struct Ctx {
     /// The apex/base domain reserved for the admin surface.
     pub apex_host: String,
+    /// Separators allowed between a workspace slug and `apex_host`.
+    pub workspace_separators: String,
     pub workspaces: Arc<dyn WorkspaceRepository>,
     pub collections: Arc<dyn CollectionRepository>,
     pub folders: Arc<dyn FolderRepository>,
@@ -44,4 +64,19 @@ pub struct Ctx {
     pub signer: Arc<dyn Signer>,
     pub timer: Arc<dyn Timer>,
     pub auth: Arc<AuthConfig>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_separator_sets() {
+        assert_eq!(parse_workspace_separators(".-").unwrap(), ".-");
+        assert_eq!(parse_workspace_separators("-").unwrap(), "-");
+        assert_eq!(parse_workspace_separators(" .- ").unwrap(), ".-");
+        assert!(parse_workspace_separators("").is_err());
+        assert!(parse_workspace_separators(" ").is_err());
+        assert!(parse_workspace_separators("_").is_err());
+    }
 }

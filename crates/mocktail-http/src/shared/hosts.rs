@@ -10,24 +10,24 @@ pub fn host_without_port(host: &str) -> String {
 pub enum Surface<'a> {
     /// Admin surface on the apex domain.
     Admin,
-    /// Mock runtime on `{workspace-slug}.apex`.
+    /// Mock runtime on `{workspace-slug}<separator>apex`.
     Workspace(&'a str),
     /// Host does not belong to this deployment.
     Unknown,
 }
 
-pub fn classify<'a>(host: &'a str, apex: &str) -> Surface<'a> {
+pub fn classify<'a>(host: &'a str, apex: &str, separators: &str) -> Surface<'a> {
     if host == apex || host == "localhost" {
         return Surface::Admin;
     }
-    let suffix = format!(".{apex}");
-    if let Some(label) = host.strip_suffix(&suffix) {
-        // Only a single leading label is a workspace (no nested subdomains).
-        if !label.is_empty() && !label.contains('.') {
-            return Surface::Workspace(label);
-        }
+    let label = host
+        .strip_suffix(apex)
+        .and_then(|rest| rest.strip_suffix(|c: char| separators.contains(c)));
+    // Only a single leading label is a workspace (no nested subdomains).
+    match label {
+        Some(label) if !label.is_empty() && !label.contains('.') => Surface::Workspace(label),
+        _ => Surface::Unknown,
     }
-    Surface::Unknown
 }
 
 /// The first path segment (the collection slug on the mock surface).
@@ -41,20 +41,61 @@ mod tests {
 
     #[test]
     fn classify_host() {
+        let both = ".-";
         assert!(matches!(
-            classify("mocktail.com", "mocktail.com"),
+            classify("mocktail.com", "mocktail.com", both),
             Surface::Admin
         ));
         assert!(matches!(
-            classify("acme.mocktail.com", "mocktail.com"),
+            classify("acme.mocktail.com", "mocktail.com", both),
             Surface::Workspace("acme")
         ));
         assert!(matches!(
-            classify("a.b.mocktail.com", "mocktail.com"),
+            classify("acme-mocktail.com", "mocktail.com", both),
+            Surface::Workspace("acme")
+        ));
+        assert!(matches!(
+            classify("acme-team-mocktail.com", "mocktail.com", both),
+            Surface::Workspace("acme-team")
+        ));
+        assert!(matches!(
+            classify("a.b.mocktail.com", "mocktail.com", both),
             Surface::Unknown
         ));
         assert!(matches!(
-            classify("evil.com", "mocktail.com"),
+            classify("a.b-mocktail.com", "mocktail.com", both),
+            Surface::Unknown
+        ));
+        assert!(matches!(
+            classify("-mocktail.com", "mocktail.com", both),
+            Surface::Unknown
+        ));
+        assert!(matches!(
+            classify("evil.com", "mocktail.com", both),
+            Surface::Unknown
+        ));
+        assert!(matches!(
+            classify("acme-localhost", "localhost", both),
+            Surface::Workspace("acme")
+        ));
+    }
+
+    #[test]
+    fn separators_gate_forms() {
+        assert!(matches!(
+            classify("acme.mocktail.com", "mocktail.com", "."),
+            Surface::Workspace("acme")
+        ));
+        assert!(matches!(
+            classify("acme-mocktail.com", "mocktail.com", "."),
+            Surface::Unknown
+        ));
+        assert!(matches!(
+            classify("acme-mocktail.com", "mocktail.com", "-"),
+            Surface::Workspace("acme")
+        ));
+        assert!(matches!(
+            classify("acme.mocktail.com", "mocktail.com", "-"),
             Surface::Unknown
         ));
     }

@@ -22,7 +22,10 @@ pub(crate) fn unknown_host(req: &Request, ctx: &Ctx) -> Response {
         &serde_json::json!({
             "error": "unknown host",
             "host": hosts::host_without_port(&req.host),
-            "hint": "expected {workspace}.{apex} or the apex admin host",
+            "hint": format!(
+                "expected {{workspace}}{{separator}}{} or the apex admin host (separators: {})",
+                ctx.apex_host, ctx.workspace_separators
+            ),
         }),
         None,
         req,

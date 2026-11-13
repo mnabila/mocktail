@@ -2,6 +2,7 @@
 // (same-origin) and a CSRF token on mutations.
 
 import type { MeResponse } from '$lib/types/domain';
+import { setWorkspaceSeparators } from '$lib/utils/format';
 
 const BASE = '/__admin';
 let csrf = '';
@@ -87,5 +88,6 @@ export const api = {
 export async function loadMe(): Promise<MeResponse> {
   const me = await api.get<MeResponse>('/me');
   setCsrf(me.csrf);
+  setWorkspaceSeparators(me.workspaceSeparators);
   return me;
 }

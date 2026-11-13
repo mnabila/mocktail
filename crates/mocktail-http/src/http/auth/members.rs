@@ -126,7 +126,13 @@ async fn me(ctx: &Ctx, actor: &Actor) -> AppResult<Response> {
         .collect();
     Ok(Response::api_json(
         200,
-        &json!({ "user": user_json(&actor.user), "memberships": ms, "providers": ids, "csrf": actor.claims.csrf }),
+        &json!({
+            "user": user_json(&actor.user),
+            "memberships": ms,
+            "providers": ids,
+            "csrf": actor.claims.csrf,
+            "workspaceSeparators": ctx.workspace_separators,
+        }),
     ))
 }
 

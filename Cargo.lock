@@ -1061,7 +1061,7 @@ dependencies = [
 
 [[package]]
 name = "mocktail-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -1075,7 +1075,7 @@ dependencies = [
 
 [[package]]
 name = "mocktail-http"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "axum",
@@ -1089,7 +1089,7 @@ dependencies = [
 
 [[package]]
 name = "mocktail-infra-sqlite"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "mocktail-core",
@@ -1103,7 +1103,7 @@ dependencies = [
 
 [[package]]
 name = "mocktail-native"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1134,7 +1134,7 @@ dependencies = [
 
 [[package]]
 name = "mocktail-worker"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "axum",

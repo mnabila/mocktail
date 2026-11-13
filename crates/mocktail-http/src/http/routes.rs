@@ -134,7 +134,7 @@ async fn host_guard(State(ctx): State<Arc<Ctx>>, req: Request, next: Next) -> Ax
     let method = req.method().clone();
     let uri = req.uri().clone();
 
-    match hosts::classify(&host, &ctx.apex_host) {
+    match hosts::classify(&host, &ctx.apex_host, &ctx.workspace_separators) {
         hosts::Surface::Admin => {
             tracing::info!(method = %method, uri = %uri, host = %host, "Admin request");
             next.run(req).await

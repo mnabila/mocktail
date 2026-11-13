@@ -138,6 +138,8 @@ export interface MeResponse {
   memberships: Membership[];
   providers: Identity[];
   csrf: string;
+  /** Allowed workspace host separators, e.g. `".-"`. */
+  workspaceSeparators: string;
 }
 
 // A workspace member as returned by the members admin API (joins user + role).

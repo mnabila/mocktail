@@ -3,7 +3,7 @@
   import { createMutation } from '@tanstack/svelte-query';
   import { api } from '$lib/api/client';
   import { apiErrorMessage, queryClient, queryKeys } from '$lib/api/query';
-  import { slugify } from '$lib/utils/format';
+  import { slugify, workspaceSeparator } from '$lib/utils/format';
   import type { Workspace } from '$lib/types/domain';
   import Icon from '$lib/components/ui/Icon.svelte';
 
@@ -60,7 +60,12 @@
         onkeydown={(e) => e.key === 'Enter' && name && !busy && create()}
       />
       <p class="text-xs text-faint">
-        Subdomain: <span class="mono text-muted">{slugPreview}</span>.mocktail
+        Subdomain:
+        <span class="mono text-muted">
+          {slugPreview}{workspaceSeparator()}{typeof location !== 'undefined'
+            ? location.host
+            : 'mocktail'}
+        </span>
       </p>
     </div>
 

@@ -5,6 +5,7 @@
 pub mod oauth;
 
 use anyhow::{Context, Result, bail};
+use mocktail_core::app::ctx::{DEFAULT_WORKSPACE_SEPARATORS, parse_workspace_separators};
 use serde::Deserialize;
 
 /// Config file auto-loaded from the working directory when no `--config` is given.
@@ -53,6 +54,8 @@ pub struct ServerConfig {
     pub bind: String,
     /// Apex/base domain reserved for the admin surface.
     pub adminHost: String,
+    /// Separators allowed between a workspace slug and `adminHost`.
+    pub workspaceSeparators: String,
     /// Public base URL used to derive OAuth redirect URIs.
     pub publicBaseUrl: String,
 }
@@ -99,6 +102,7 @@ impl Default for ServerConfig {
         ServerConfig {
             bind: "0.0.0.0:8787".to_string(),
             adminHost: "localhost".to_string(),
+            workspaceSeparators: DEFAULT_WORKSPACE_SEPARATORS.to_string(),
             publicBaseUrl: "http://localhost:8787".to_string(),
         }
     }
@@ -163,6 +167,9 @@ fn validate(c: &Config) -> Result<()> {
     if c.server.adminHost.trim().is_empty() {
         bail!("server.adminHost must not be empty");
     }
+    if let Err(e) = parse_workspace_separators(&c.server.workspaceSeparators) {
+        bail!("{e}");
+    }
     if c.sqlite.path.trim().is_empty() {
         bail!("sqlite.path must not be empty");
     }
@@ -195,6 +202,7 @@ mod tests {
     fn defaults_validate() {
         let c = load(None, &[]).unwrap();
         assert_eq!(c.server.bind, "0.0.0.0:8787");
+        assert_eq!(c.server.workspaceSeparators, ".");
     }
 
     #[test]
@@ -203,11 +211,19 @@ mod tests {
             None,
             &[
                 "server.adminHost=app.example.com".to_string(),
+                "server.workspaceSeparators=.-".to_string(),
                 "sqlite.path=/data/prod.db".to_string(),
             ],
         )
         .unwrap();
         assert_eq!(c.server.adminHost, "app.example.com");
+        assert_eq!(c.server.workspaceSeparators, ".-");
         assert_eq!(c.sqlite.path, "/data/prod.db");
+    }
+
+    #[test]
+    fn invalid_separators_rejected() {
+        assert!(load(None, &["server.workspaceSeparators=|".to_string()]).is_err());
+        assert!(load(None, &["server.workspaceSeparators=".to_string()]).is_err());
     }
 }

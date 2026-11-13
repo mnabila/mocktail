@@ -12,7 +12,7 @@ use infrastructure::runtime::{
     HmacSigner, LocalRateLimiter, ReqwestHttpClient, SystemClock, TokioTimer, UuidIdGenerator,
 };
 use infrastructure::sqlite::SqliteExecutor;
-use mocktail_core::app::ctx::{AuthConfig, Ctx};
+use mocktail_core::app::ctx::{AuthConfig, Ctx, parse_workspace_separators};
 use mocktail_core::modules::auth::application::{MembershipRepository, UserRepository};
 use mocktail_core::modules::collection::application::CollectionRepository;
 use mocktail_core::modules::folder::application::FolderRepository;
@@ -99,6 +99,8 @@ async fn run(cfg: config::Config, otel_handle: otel::OtelHandle) -> Result<()> {
 
     let parts = Parts {
         apex_host: cfg.server.adminHost.to_ascii_lowercase(),
+        workspace_separators: parse_workspace_separators(&cfg.server.workspaceSeparators)
+            .map_err(anyhow::Error::msg)?,
         session_secret: cfg.auth.sessionSecret.clone(),
         auth,
     };
@@ -121,6 +123,7 @@ async fn run(cfg: config::Config, otel_handle: otel::OtelHandle) -> Result<()> {
 /// Runtime pieces shared by both store backends.
 struct Parts {
     apex_host: String,
+    workspace_separators: String,
     session_secret: String,
     auth: Arc<AuthConfig>,
 }
@@ -139,6 +142,7 @@ where
 {
     Ctx {
         apex_host: parts.apex_host,
+        workspace_separators: parts.workspace_separators,
         workspaces: repos.clone(),
         collections: repos.clone(),
         folders: repos.clone(),

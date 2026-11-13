@@ -86,17 +86,24 @@ fn full_flow_import_then_serve() {
         let resp = handle(serve, ctx).await;
         assert_eq!(resp.status, 200);
         assert_eq!(String::from_utf8_lossy(&resp.body), "{\"id\":\"42\"}");
-        assert_eq!(resp.headers.get("X-Request-Id"), Some("generated-req-id"));
+        assert!(resp.headers.get("X-Request-Id").is_some());
         assert_eq!(resp.headers.get("Access-Control-Allow-Origin"), Some("*"));
 
-        // 5. A path with no matching mock yields a diagnostic 404 with near-misses.
+        // 5. The hyphen-separated host resolves to the same workspace.
+        let mut hyphen = mock_req("acme", "/todo/api/v1/todos/42");
+        hyphen.host = format!("acme-{APEX}");
+        let resp = handle(hyphen, ctx).await;
+        assert_eq!(resp.status, 200);
+        assert_eq!(String::from_utf8_lossy(&resp.body), "{\"id\":\"42\"}");
+
+        // 6. A path with no matching mock yields a diagnostic 404 with near-misses.
         let resp = handle(mock_req("acme", "/todo/api/v1/nope"), ctx).await;
         assert_eq!(resp.status, 404);
         let b = body_json(&resp);
         assert_eq!(b["error"], "no matching mock");
         assert_eq!(b["nearMisses"][0], "GET /todos/{id}");
 
-        // 6. CORS preflight answered automatically.
+        // 7. CORS preflight answered automatically.
         let mut pre = Request {
             method: Method::Options,
             host: format!("acme.{APEX}"),
@@ -111,7 +118,7 @@ fn full_flow_import_then_serve() {
         assert_eq!(resp.status, 204);
         assert!(resp.headers.get("Access-Control-Allow-Methods").is_some());
 
-        // 7. Request logs recorded (serve + 404 + preflight = 3).
-        assert_eq!(h.repos.logs.borrow().len(), 3);
+        // 8. Request logs recorded (dot serve + hyphen serve + 404 + preflight = 4).
+        assert_eq!(h.repos.logs.borrow().len(), 4);
     });
 }

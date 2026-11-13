@@ -1,6 +1,8 @@
 # Local-only overrides for `wrangler dev`. Copy to .dev.vars (gitignored).
 # Values here take precedence over [vars] in wrangler.toml.
 APEX_HOST=localhost
+# Workspace host separators: "." (default), "-", or ".-" for both.
+WORKSPACE_SEPARATORS=.-
 PUBLIC_BASE_URL=http://localhost:8787
 SESSION_SECRET=dev-only-session-secret-change-me
 

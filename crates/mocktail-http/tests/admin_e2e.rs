@@ -476,6 +476,14 @@ fn admin_responses_use_the_standard_envelope() {
         assert_eq!(body["status"]["message"], "Created");
         assert_eq!(body["data"]["slug"], "acme");
 
+        // /me publishes the configured separators for portal URL rendering.
+        let resp = handle(
+            areq(&h, Method::Get, "/__admin/me", serde_json::Value::Null),
+            &h.ctx,
+        )
+        .await;
+        assert_eq!(body_json(&resp)["data"]["workspaceSeparators"], ".-");
+
         // Errors use the same shape and carry no payload.
         let resp = handle(
             areq(

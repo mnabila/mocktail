@@ -66,7 +66,7 @@ async fn metrics_handler(ctx: Arc<Ctx>, headers: axum::http::HeaderMap) -> Respo
         .map(host_without_port)
         .unwrap_or_default();
     if !matches!(
-        mocktail_http::router::classify(&host, &ctx.apex_host),
+        mocktail_http::router::classify(&host, &ctx.apex_host, &ctx.workspace_separators),
         mocktail_http::router::Surface::Admin
     ) {
         return Response::builder()
@@ -106,7 +106,7 @@ async fn native_layer(State(ctx): State<Arc<Ctx>>, mut req: Request, next: Next)
 
     // Only serve the portal SPA if the host is classified as the Admin surface.
     // This explicitly prevents workspace subdomains from ever seeing the dashboard.
-    let surface = mocktail_http::router::classify(&host, &ctx.apex_host);
+    let surface = mocktail_http::router::classify(&host, &ctx.apex_host, &ctx.workspace_separators);
     if matches!(surface, mocktail_http::router::Surface::Admin)
         && is_get
         && !is_api

@@ -4,9 +4,13 @@ server:
   # Address the HTTP server binds (one port serves both admin and mock traffic).
   bind: "0.0.0.0:8787"
   # Apex/base domain reserved for the admin surface. Workspaces resolve as
-  # {workspace-slug}.<adminHost>. For local testing use "localhost" and send
-  # Host: acme.localhost to reach the "acme" workspace.
+  # {workspace-slug}<separator><adminHost>. For local testing use "localhost"
+  # and send Host: acme.localhost to reach the "acme" workspace.
   adminHost: "mocktail.local"
+  # Allowed separators between a workspace slug and adminHost: "." (default),
+  # "-", or ".-" for both. Hyphen hosts also need matching DNS/routes.
+  # Portal-generated URLs use "-" when enabled, otherwise ".".
+  workspaceSeparators: "."
   # Public base URL used to derive OAuth redirect URIs
   # ({publicBaseUrl}/auth/{provider}/callback).
   publicBaseUrl: "https://mocktail.local"

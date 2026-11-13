@@ -16,7 +16,7 @@ default-members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 license = "GPL-3.0-only"
 authors = ["M. Nabil Adani"]
@@ -59,3 +59,10 @@ tracing-opentelemetry = "0.34"
 mocktail-core = { path = "crates/mocktail-core" }
 mocktail-http = { path = "crates/mocktail-http" }
 mocktail-infra-sqlite = { path = "crates/mocktail-infra-sqlite" }
+
+[profile.release]
+opt-level = "z"     # Optimize for size
+lto = true          # Link Time Optimization
+codegen-units = 1   # Maximize optimization potential
+panic = "abort"     # Remove panic unwinding code
+strip = true        # Automatically strip symbols from binary

@@ -1,7 +1,9 @@
 mod runtime;
 mod otel;
 
-use mocktail_core::app::ctx::{AuthConfig, Ctx};
+use mocktail_core::app::ctx::{
+    AuthConfig, Ctx, DEFAULT_WORKSPACE_SEPARATORS, parse_workspace_separators,
+};
 use mocktail_core::modules::auth::domain::OAuthProvider;
 use mocktail_infra_sqlite::SqliteRepositories;
 use runtime::{
@@ -104,6 +106,10 @@ fn build_ctx(env: &Env) -> std::result::Result<Ctx, String> {
 
     let http: Arc<dyn mocktail_core::shared::ports::HttpClient> = Arc::new(FetchHttpClient);
     let apex_host = require("APEX_HOST")?.to_ascii_lowercase();
+    let workspace_separators = parse_workspace_separators(
+        &get("WORKSPACE_SEPARATORS")
+            .unwrap_or_else(|| DEFAULT_WORKSPACE_SEPARATORS.to_string()),
+    )?;
     let public_base_url = require("PUBLIC_BASE_URL")?;
     let session_secret = require("SESSION_SECRET")?;
     let auth = Arc::new(AuthConfig {
@@ -115,6 +121,7 @@ fn build_ctx(env: &Env) -> std::result::Result<Ctx, String> {
 
     let parts = Parts {
         apex_host,
+        workspace_separators,
         http: http.clone(),
         signer: Arc::new(HmacSigner::new(session_secret)),
         auth,
@@ -131,6 +138,7 @@ fn build_ctx(env: &Env) -> std::result::Result<Ctx, String> {
 /// Runtime pieces shared by both store backends.
 struct Parts {
     apex_host: String,
+    workspace_separators: String,
     http: Arc<dyn mocktail_core::shared::ports::HttpClient>,
     signer: Arc<dyn mocktail_core::shared::ports::Signer>,
     auth: Arc<AuthConfig>,
@@ -150,6 +158,7 @@ where
 {
     Ctx {
         apex_host: parts.apex_host,
+        workspace_separators: parts.workspace_separators,
         workspaces: repos.clone(),
         collections: repos.clone(),
         folders: repos.clone(),

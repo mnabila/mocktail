@@ -11,11 +11,23 @@ export function slugify(s: string | null | undefined, fallback = 'item'): string
   );
 }
 
+let separator = '.';
+
+/** Apply the separators returned by GET /__admin/me. */
+export function setWorkspaceSeparators(value?: string | null): void {
+  separator = value?.includes('-') ? '-' : '.';
+}
+
+/** Preferred separator for portal-generated mock URLs (`-` when enabled). */
+export function workspaceSeparator(): string {
+  return separator;
+}
+
 /** Build the public mount URL for a collection. */
 export function mountUrl(wsSlug: string, collSlug: string, basePath?: string | null): string {
   const proto = typeof location !== 'undefined' ? location.protocol : 'http:';
   const host = typeof location !== 'undefined' ? location.host : 'mocktail';
-  return `${proto}//${wsSlug}.${host}/${collSlug}${basePath || ''}`;
+  return `${proto}//${wsSlug}${separator}${host}/${collSlug}${basePath || ''}`;
 }
 
 /** Render a unix-millis timestamp in the browser's own locale + timezone. */
