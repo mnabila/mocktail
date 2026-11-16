@@ -6,14 +6,16 @@ use serde::Serialize;
 use worker::*;
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct OTLPRequest {
-    resourceSpans: Vec<ResourceSpan>,
+    resource_spans: Vec<ResourceSpan>,
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct ResourceSpan {
     resource: Resource,
-    scopeSpans: Vec<ScopeSpan>,
+    scope_spans: Vec<ScopeSpan>,
 }
 
 #[derive(Serialize)]
@@ -28,8 +30,9 @@ struct KeyValue {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct Value {
-    stringValue: String,
+    string_value: String,
 }
 
 #[derive(Serialize)]
@@ -66,24 +69,24 @@ impl OtelWorker {
         let now = js_sys::Date::now() as u64 * 1_000_000;
 
         let request = OTLPRequest {
-            resourceSpans: vec![ResourceSpan {
+            resource_spans: vec![ResourceSpan {
                 resource: Resource {
                     attributes: vec![
                         KeyValue {
                             key: "service.name".into(),
                             value: Value {
-                                stringValue: "mocktail-worker".into(),
+                                string_value: "mocktail-worker".into(),
                             },
                         },
                         KeyValue {
                             key: "deployment.environment".into(),
                             value: Value {
-                                stringValue: self.environment.clone(),
+                                string_value: self.environment.clone(),
                             },
                         },
                     ],
                 },
-                scopeSpans: vec![ScopeSpan {
+                scope_spans: vec![ScopeSpan {
                     spans: vec![Span {
                         trace_id: uuid::Uuid::new_v4().to_string().replace("-", ""),
                         span_id: uuid::Uuid::new_v4().to_string().replace("-", ""),
