@@ -33,6 +33,8 @@ pub struct CollectionDoc {
     pub source: String,
     pub base_path: String,
     pub cors: CorsDoc,
+    #[serde(default)]
+    pub ip_allowlist: Vec<String>,
     pub version: i64,
     pub created_at: i64,
 }

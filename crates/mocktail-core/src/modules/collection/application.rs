@@ -23,6 +23,7 @@ pub struct NewCollection {
     pub source: Source,
     pub base_path: String,
     pub cors_policy: Option<CorsPolicy>,
+    pub ip_allowlist: Vec<String>,
 }
 
 /// Create a collection; slug is unique per workspace.
@@ -51,6 +52,7 @@ pub async fn create_collection(
         source: input.source,
         base_path: normalize_base_path(&input.base_path),
         cors_policy: input.cors_policy.unwrap_or_default(),
+        ip_allowlist: input.ip_allowlist,
         version: 1,
         created_at: now,
     };

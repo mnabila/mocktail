@@ -38,7 +38,7 @@ impl CollectionRepository for CollectionRepositoryImpl {
     async fn find_by_slug(&self, ws: &WorkspaceId, slug: &Slug) -> AppResult<Option<Collection>> {
         let rows = self
             .query(
-                "SELECT id, workspace_id, slug, name, description, source, base_path, cors, version, created_at FROM collections WHERE workspace_id=? AND slug=? LIMIT 1",
+                "SELECT id, workspace_id, slug, name, description, source, base_path, cors, ip_allowlist, version, created_at FROM collections WHERE workspace_id=? AND slug=? LIMIT 1",
                 vec![
                     SqlValue::Text(ws.as_str().to_string()),
                     SqlValue::Text(slug.as_str().to_string()),
@@ -82,6 +82,12 @@ impl CollectionRepository for CollectionRepositoryImpl {
                             .ok_or_else(|| AppError::Internal("missing cors".into()))?,
                     )
                     .map_err(|e| AppError::Internal(e.to_string()))?,
+                    ip_allowlist: serde_json::from_str(
+                        r["ip_allowlist"]
+                            .as_str()
+                            .ok_or_else(|| AppError::Internal("missing ip_allowlist".into()))?,
+                    )
+                    .map_err(|e| AppError::Internal(e.to_string()))?,
                     version: r["version"]
                         .as_i64()
                         .ok_or_else(|| AppError::Internal("missing version".into()))?,
@@ -97,7 +103,7 @@ impl CollectionRepository for CollectionRepositoryImpl {
     async fn find_by_id(&self, id: &CollectionId) -> AppResult<Option<Collection>> {
         let rows = self
             .query(
-                "SELECT id, workspace_id, slug, name, description, source, base_path, cors, version, created_at FROM collections WHERE id=? LIMIT 1",
+                "SELECT id, workspace_id, slug, name, description, source, base_path, cors, ip_allowlist, version, created_at FROM collections WHERE id=? LIMIT 1",
                 vec![SqlValue::Text(id.as_str().to_string())],
             )
             .await?;
@@ -138,6 +144,12 @@ impl CollectionRepository for CollectionRepositoryImpl {
                             .ok_or_else(|| AppError::Internal("missing cors".into()))?,
                     )
                     .map_err(|e| AppError::Internal(e.to_string()))?,
+                    ip_allowlist: serde_json::from_str(
+                        r["ip_allowlist"]
+                            .as_str()
+                            .ok_or_else(|| AppError::Internal("missing ip_allowlist".into()))?,
+                    )
+                    .map_err(|e| AppError::Internal(e.to_string()))?,
                     version: r["version"]
                         .as_i64()
                         .ok_or_else(|| AppError::Internal("missing version".into()))?,
@@ -153,7 +165,7 @@ impl CollectionRepository for CollectionRepositoryImpl {
     async fn list(&self, ws: &WorkspaceId) -> AppResult<Vec<Collection>> {
         let rows = self
             .query(
-                "SELECT id, workspace_id, slug, name, description, source, base_path, cors, version, created_at FROM collections WHERE workspace_id=?",
+                "SELECT id, workspace_id, slug, name, description, source, base_path, cors, ip_allowlist, version, created_at FROM collections WHERE workspace_id=?",
                 vec![SqlValue::Text(ws.as_str().to_string())],
             )
             .await?;
@@ -194,6 +206,12 @@ impl CollectionRepository for CollectionRepositoryImpl {
                         .ok_or_else(|| AppError::Internal("missing cors".into()))?,
                 )
                 .map_err(|e| AppError::Internal(e.to_string()))?,
+                ip_allowlist: serde_json::from_str(
+                    r["ip_allowlist"]
+                        .as_str()
+                        .ok_or_else(|| AppError::Internal("missing ip_allowlist".into()))?,
+                )
+                .map_err(|e| AppError::Internal(e.to_string()))?,
                 version: r["version"]
                     .as_i64()
                     .ok_or_else(|| AppError::Internal("missing version".into()))?,
@@ -209,8 +227,10 @@ impl CollectionRepository for CollectionRepositoryImpl {
         let doc = map::collection_to_doc(c);
         let cors_json =
             serde_json::to_string(&doc.cors).map_err(|e| AppError::Internal(e.to_string()))?;
+        let ip_allowlist_json = serde_json::to_string(&doc.ip_allowlist)
+            .map_err(|e| AppError::Internal(e.to_string()))?;
         self.execute(
-            "INSERT INTO collections(id,workspace_id,slug,name,description,source,base_path,cors,version,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO collections(id,workspace_id,slug,name,description,source,base_path,cors,ip_allowlist,version,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
             vec![
                 SqlValue::Text(doc.id),
                 SqlValue::Text(doc.workspace_id),
@@ -220,6 +240,7 @@ impl CollectionRepository for CollectionRepositoryImpl {
                 SqlValue::Text(doc.source),
                 SqlValue::Text(doc.base_path),
                 SqlValue::Text(cors_json),
+                SqlValue::Text(ip_allowlist_json),
                 SqlValue::I64(doc.version),
                 SqlValue::I64(doc.created_at),
             ],
@@ -230,8 +251,10 @@ impl CollectionRepository for CollectionRepositoryImpl {
         let doc = map::collection_to_doc(c);
         let cors_json =
             serde_json::to_string(&doc.cors).map_err(|e| AppError::Internal(e.to_string()))?;
+        let ip_allowlist_json = serde_json::to_string(&doc.ip_allowlist)
+            .map_err(|e| AppError::Internal(e.to_string()))?;
         self.execute(
-            "UPDATE collections SET slug=?, name=?, description=?, source=?, base_path=?, cors=?, version=?, created_at=? WHERE id=?",
+            "UPDATE collections SET slug=?, name=?, description=?, source=?, base_path=?, cors=?, ip_allowlist=?, version=?, created_at=? WHERE id=?",
             vec![
                 SqlValue::Text(doc.slug),
                 SqlValue::Text(doc.name),
@@ -239,6 +262,7 @@ impl CollectionRepository for CollectionRepositoryImpl {
                 SqlValue::Text(doc.source),
                 SqlValue::Text(doc.base_path),
                 SqlValue::Text(cors_json),
+                SqlValue::Text(ip_allowlist_json),
                 SqlValue::I64(doc.version),
                 SqlValue::I64(doc.created_at),
                 SqlValue::Text(doc.id),

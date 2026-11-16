@@ -9,7 +9,7 @@ use axum::response::Response as AxumResponse;
 use mocktail_core::app::ctx::Ctx;
 use mocktail_core::modules::collection::application as coll_app;
 use mocktail_core::modules::collection::domain::{
-    AllowOrigins, Collection, CorsPolicy, Source, normalize_base_path,
+    AllowOrigins, Collection, CorsPolicy, Source, normalize_base_path, validate_ip_allowlist_entry,
 };
 use mocktail_core::shared::error::{AppError, AppResult};
 use mocktail_core::shared::http::{Request, Response};
@@ -122,6 +122,7 @@ async fn create_collection(req: &Request, ctx: &Ctx, ws_id: &str) -> AppResult<R
         Some(v) if !v.is_null() => Some(parse_cors(v)?),
         _ => None,
     };
+    let ip_allowlist = parse_ip_allowlist(body.get("ipAllowlist"))?;
     let coll = coll_app::create_collection(
         ctx.collections.as_ref(),
         CollectionId::new(ctx.ids.new_object_id()),
@@ -133,6 +134,7 @@ async fn create_collection(req: &Request, ctx: &Ctx, ws_id: &str) -> AppResult<R
             source,
             base_path,
             cors_policy,
+            ip_allowlist,
         },
         ctx.clock.now_millis(),
     )
@@ -164,6 +166,9 @@ async fn patch_collection(req: &Request, ctx: &Ctx, id: &str) -> AppResult<Respo
     if let Some(cors) = body.get("cors").filter(|c| !c.is_null()) {
         coll.cors_policy = parse_cors(cors)?;
     }
+    if body.get("ipAllowlist").is_some() {
+        coll.ip_allowlist = parse_ip_allowlist(body.get("ipAllowlist"))?;
+    }
     let updated = coll_app::update_collection(ctx.collections.as_ref(), coll).await?;
     Ok(Response::api_json(200, &collection_json(&updated)))
 }
@@ -185,8 +190,33 @@ fn collection_json(c: &Collection) -> Value {
         "mountPath": c.mount_path(),
         "version": c.version,
         "cors": cors_json(&c.cors_policy),
+        "ipAllowlist": c.ip_allowlist,
         "createdAt": c.created_at,
     })
+}
+
+/// Parse an `ipAllowlist` JSON array of IP/CIDR strings, validating each entry.
+/// Missing/null yields an empty list (allow all).
+fn parse_ip_allowlist(v: Option<&Value>) -> AppResult<Vec<String>> {
+    let Some(v) = v.filter(|v| !v.is_null()) else {
+        return Ok(vec![]);
+    };
+    let Value::Array(arr) = v else {
+        return Err(AppError::BadRequest("ipAllowlist must be an array".into()));
+    };
+    let mut out = Vec::with_capacity(arr.len());
+    for item in arr {
+        let entry = item
+            .as_str()
+            .ok_or_else(|| AppError::BadRequest("ipAllowlist entries must be strings".into()))?
+            .trim();
+        if entry.is_empty() {
+            continue;
+        }
+        validate_ip_allowlist_entry(entry).map_err(AppError::BadRequest)?;
+        out.push(entry.to_string());
+    }
+    Ok(out)
 }
 
 fn cors_json(p: &CorsPolicy) -> Value {

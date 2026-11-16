@@ -2,6 +2,7 @@
 
 use crate::shared::ids::{CollectionId, Slug, WorkspaceId};
 use crate::shared::ports::UnixMillis;
+use std::net::IpAddr;
 
 /// Where a collection's mocks came from. Indistinguishable to the runtime —
 /// this is metadata only.
@@ -96,6 +97,8 @@ pub struct Collection {
     /// Spec-relative base path, e.g. `/api/v1`. May be empty.
     pub base_path: String,
     pub cors_policy: CorsPolicy,
+    /// Client IP/CIDR allowlist for the mock runtime. Empty = allow all.
+    pub ip_allowlist: Vec<String>,
     /// Bumped on every edit to invalidate the mock-set cache.
     pub version: u64,
     pub created_at: UnixMillis,
@@ -140,6 +143,68 @@ pub fn normalize_base_path(raw: &str) -> String {
     with_lead.trim_end_matches('/').to_string()
 }
 
+/// Validate one allowlist entry: a bare IP (`203.0.113.5`, `::1`) or a CIDR
+/// (`10.0.0.0/8`, `fd00::/8`). Called at save time (trust boundary).
+pub fn validate_ip_allowlist_entry(entry: &str) -> Result<(), String> {
+    match parse_ip_rule(entry) {
+        Some(_) => Ok(()),
+        None => Err(format!("invalid IP or CIDR: {entry}")),
+    }
+}
+
+/// Whether `client` matches any allowlist entry. An empty list allows everyone.
+pub fn ip_allowed(entries: &[String], client: &IpAddr) -> bool {
+    entries.is_empty()
+        || entries
+            .iter()
+            .any(|e| parse_ip_rule(e).is_some_and(|rule| rule.contains(client)))
+}
+
+enum IpRule {
+    Exact(IpAddr),
+    Cidr(IpAddr, u8),
+}
+
+impl IpRule {
+    fn contains(&self, ip: &IpAddr) -> bool {
+        match self {
+            IpRule::Exact(a) => a == ip,
+            IpRule::Cidr(net, prefix) => match (net, ip) {
+                (IpAddr::V4(n), IpAddr::V4(i)) => bits_match(&n.octets(), &i.octets(), *prefix),
+                (IpAddr::V6(n), IpAddr::V6(i)) => bits_match(&n.octets(), &i.octets(), *prefix),
+                // A v4 rule never matches a v6 client, or vice versa.
+                _ => false,
+            },
+        }
+    }
+}
+
+fn parse_ip_rule(entry: &str) -> Option<IpRule> {
+    let entry = entry.trim();
+    if let Some((net, prefix)) = entry.split_once('/') {
+        let net: IpAddr = net.parse().ok()?;
+        let prefix: u8 = prefix.parse().ok()?;
+        let max = if net.is_ipv4() { 32 } else { 128 };
+        (prefix <= max).then_some(IpRule::Cidr(net, prefix))
+    } else {
+        Some(IpRule::Exact(entry.parse().ok()?))
+    }
+}
+
+/// Compare the first `prefix` bits of two equal-length byte arrays.
+fn bits_match(a: &[u8], b: &[u8], prefix: u8) -> bool {
+    let full = (prefix / 8) as usize;
+    if a[..full] != b[..full] {
+        return false;
+    }
+    let rem = prefix % 8;
+    if rem == 0 {
+        return true;
+    }
+    let mask = 0xffu8 << (8 - rem);
+    (a[full] & mask) == (b[full] & mask)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -155,6 +220,7 @@ mod tests {
             source: Source::Manual,
             base_path: normalize_base_path(base),
             cors_policy: CorsPolicy::default(),
+            ip_allowlist: vec![],
             version: 0,
             created_at: 0,
         }
@@ -206,5 +272,40 @@ mod tests {
             Some("https://a.com".to_string())
         );
         assert_eq!(p.resolve_allow_origin(Some("https://b.com")), None);
+    }
+
+    #[test]
+    fn empty_allowlist_allows_any() {
+        assert!(ip_allowed(&[], &"203.0.113.9".parse().unwrap()));
+    }
+
+    #[test]
+    fn exact_and_cidr_matching() {
+        let list = [
+            "203.0.113.5".to_string(),
+            "10.0.0.0/8".to_string(),
+            "2001:db8::/32".to_string(),
+        ];
+        assert!(ip_allowed(&list, &"203.0.113.5".parse().unwrap()));
+        assert!(ip_allowed(&list, &"10.1.2.3".parse().unwrap()));
+        assert!(ip_allowed(&list, &"2001:db8::1".parse().unwrap()));
+        assert!(!ip_allowed(&list, &"203.0.113.6".parse().unwrap()));
+        assert!(!ip_allowed(&list, &"11.0.0.1".parse().unwrap()));
+        assert!(!ip_allowed(&list, &"2001:db9::1".parse().unwrap()));
+        // A v4 rule must not match a v6 client.
+        assert!(!ip_allowed(
+            &["10.0.0.0/8".to_string()],
+            &"::1".parse().unwrap()
+        ));
+    }
+
+    #[test]
+    fn validator_accepts_valid_rejects_junk() {
+        for ok in ["203.0.113.5", "10.0.0.0/8", "::1", "fd00::/8"] {
+            assert!(validate_ip_allowlist_entry(ok).is_ok(), "{ok}");
+        }
+        for bad in ["", "nope", "10.0.0.0/33", "999.1.1.1", "10.0.0.0/x"] {
+            assert!(validate_ip_allowlist_entry(bad).is_err(), "{bad}");
+        }
     }
 }

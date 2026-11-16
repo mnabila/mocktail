@@ -144,22 +144,22 @@ async fn sqlite_round_trips_all_ports() {
             source: Source::Manual,
             base_path: "/api/v1".into(),
             cors_policy: CorsPolicy::default(),
+            ip_allowlist: vec!["10.0.0.0/8".into()],
             version: 1,
             created_at: 1,
         },
     )
     .await
     .unwrap();
-    assert!(
-        CollectionRepository::find_by_slug(
-            &repo,
-            &WorkspaceId::new("w1"),
-            &Slug::parse("todo").unwrap()
-        )
-        .await
-        .unwrap()
-        .is_some()
-    );
+    let loaded = CollectionRepository::find_by_slug(
+        &repo,
+        &WorkspaceId::new("w1"),
+        &Slug::parse("todo").unwrap(),
+    )
+    .await
+    .unwrap()
+    .expect("collection round-trips");
+    assert_eq!(loaded.ip_allowlist, vec!["10.0.0.0/8".to_string()]);
 
     // mock upsert replaces, not duplicates
     let mut mock = Mock {

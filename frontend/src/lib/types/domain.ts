@@ -23,6 +23,7 @@ export interface Collection {
     allowCredentials: boolean;
     maxAgeSecs: number;
   };
+  ipAllowlist: string[];
   version: number;
   createdAt: number;
 }

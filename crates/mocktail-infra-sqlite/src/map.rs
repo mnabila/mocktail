@@ -84,6 +84,7 @@ pub fn collection_to_doc(c: &Collection) -> CollectionDoc {
         source: c.source.as_str().to_string(),
         base_path: c.base_path.clone(),
         cors: cors_to_doc(&c.cors_policy),
+        ip_allowlist: c.ip_allowlist.clone(),
         version: c.version as i64,
         created_at: c.created_at,
     }
@@ -99,6 +100,7 @@ pub fn collection_from_doc(d: CollectionDoc) -> AppResult<Collection> {
         source: Source::parse(&d.source).ok_or_else(|| corrupt("collection source", &d.source))?,
         base_path: d.base_path,
         cors_policy: cors_from_doc(d.cors),
+        ip_allowlist: d.ip_allowlist,
         version: d.version.max(0) as u64,
         created_at: d.created_at,
     })

@@ -6,7 +6,7 @@ use crate::http::util::{REQUEST_ID_HEADER, resolve_request_id};
 use crate::shared::{cors, hosts};
 use mocktail_core::app::ctx::Ctx;
 use mocktail_core::modules::auth::domain::urlencode;
-use mocktail_core::modules::collection::domain::Collection;
+use mocktail_core::modules::collection::domain::{Collection, ip_allowed};
 use mocktail_core::modules::matching::application::{Resolved, render_body, resolve_mock};
 use mocktail_core::modules::mock::domain::{ForwardSpec, RateLimit};
 use mocktail_core::modules::request_log::domain::{RequestId, RequestLog, ResponseLog};
@@ -87,6 +87,22 @@ pub(crate) async fn mock_runtime(req: &Request, ctx: &Ctx, ws_slug: &str) -> Res
         return unknown_collection(&rid, ctx, &ws, coll_slug_raw, req).await;
     };
     let spec_path = spec_path.to_string();
+
+    // Reject clients not on the collection's IP allowlist (empty = allow all).
+    // This gates the whole collection surface, including the preflight below.
+    if !coll.ip_allowlist.is_empty() {
+        let allowed = req
+            .client_ip
+            .as_deref()
+            .and_then(|ip| ip.trim().parse::<std::net::IpAddr>().ok())
+            .is_some_and(|ip| ip_allowed(&coll.ip_allowlist, &ip));
+        if !allowed {
+            let reason = "ip not allowed".to_string();
+            let resp = forbidden_response(&coll, &rid, req, &reason);
+            log_request(ctx, &rid, &ws, Some(&coll), req, &resp, None, Some(reason)).await;
+            return resp;
+        }
+    }
 
     // Automatic CORS preflight (no explicit OPTIONS mock needed).
     if req.method == Method::Options {
@@ -324,6 +340,23 @@ async fn forward_response(
             )
         }
     };
+    cors::apply_cors_headers(&mut resp, &coll.cors_policy, req.headers.get("origin"));
+    resp.headers
+        .insert(REQUEST_ID_HEADER, rid.as_str().to_string());
+    resp.headers
+        .insert("X-Mocktail-Match-Reason", reason.to_string());
+    resp
+}
+
+/// 403 for a client IP not on the collection's allowlist. Mirrors the
+/// rate-limit deny shape (CORS + request-id + match-reason headers).
+fn forbidden_response(coll: &Collection, rid: &RequestId, req: &Request, reason: &str) -> Response {
+    let mut resp = Response::json(
+        403,
+        &serde_json::json!({
+            "error": { "message": "forbidden: client IP not allowed", "status": 403 }
+        }),
+    );
     cors::apply_cors_headers(&mut resp, &coll.cors_policy, req.headers.get("origin"));
     resp.headers
         .insert(REQUEST_ID_HEADER, rid.as_str().to_string());

@@ -13,11 +13,12 @@
   import Icon from '$lib/components/ui/Icon.svelte';
   import CollectionHeader from '$lib/features/collections/CollectionHeader.svelte';
   import CollectionCorsTab from '$lib/features/collections/CollectionCorsTab.svelte';
+  import CollectionAccessTab from '$lib/features/collections/CollectionAccessTab.svelte';
   import CollectionSettingsTab from '$lib/features/collections/CollectionSettingsTab.svelte';
   import CollectionImportTab from '$lib/features/openapi/CollectionImportTab.svelte';
   import CollectionLogsTab from '$lib/features/logs/CollectionLogsTab.svelte';
 
-  const TABS = ['logs', 'import', 'cors', 'settings'] as const;
+  const TABS = ['logs', 'import', 'cors', 'access', 'settings'] as const;
 
   let wsSlug = $derived(page.params.ws ?? '');
   let collSlug = $derived(page.params.coll ?? '');
@@ -94,6 +95,8 @@
     <CollectionLogsTab {wsSlug} {wsId} {collSlug} {coll} />
   {:else if tab === 'cors'}
     <CollectionCorsTab {wsId} {coll} />
+  {:else if tab === 'access'}
+    <CollectionAccessTab {wsId} {coll} />
   {:else if tab === 'settings'}
     <CollectionSettingsTab {wsSlug} {wsId} {coll} />
   {/if}
