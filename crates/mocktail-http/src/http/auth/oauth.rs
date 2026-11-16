@@ -112,7 +112,9 @@ async fn callback(ctx: &Ctx, provider: &str, req: &Request) -> AppResult<Respons
         cookie_state.as_deref(),
         returned_state,
         code,
-        cfg.redirect_url.as_deref().unwrap_or(&redirect_uri(ctx, provider)),
+        cfg.redirect_url
+            .as_deref()
+            .unwrap_or(&redirect_uri(ctx, provider)),
     )
     .await?;
 

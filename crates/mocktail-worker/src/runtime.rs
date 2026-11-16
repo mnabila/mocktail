@@ -166,16 +166,18 @@ impl FetchHttpClient {
             init.with_body(Some(b));
         }
         let req = worker::Request::new_with_init(url, &init).map_err(|e| e.to_string())?;
-        let mut resp = Fetch::Request(req)
-            .send()
-            .await
-            .map_err(|e| {
-                worker::console_error!("outbound fetch failed: {e} | url: {url}");
-                e.to_string()
-            })?;
+        let mut resp = Fetch::Request(req).send().await.map_err(|e| {
+            worker::console_error!("outbound fetch failed: {e} | url: {url}");
+            e.to_string()
+        })?;
         let status = resp.status_code();
+        let headers = resp.headers().entries().collect();
         let body = resp.bytes().await.map_err(|e| e.to_string())?;
-        Ok(HttpResponse { status, body })
+        Ok(HttpResponse {
+            status,
+            headers,
+            body,
+        })
     }
 }
 
@@ -225,6 +227,18 @@ impl HttpClient for FetchHttpClient {
             headers,
         ))
         .await
+    }
+
+    async fn request(
+        &self,
+        method: &str,
+        url: &str,
+        body: &[u8],
+        headers: &[(String, String)],
+    ) -> Result<HttpResponse, String> {
+        let m = Method::from(method.to_string());
+        let b = (!body.is_empty()).then(|| JsValue::from_str(&String::from_utf8_lossy(body)));
+        worker::send::SendFuture::new(self.run(m, url, b, headers)).await
     }
 }
 

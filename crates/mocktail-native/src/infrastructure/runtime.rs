@@ -93,9 +93,41 @@ pub struct ReqwestHttpClient {
 impl ReqwestHttpClient {
     pub fn new() -> Self {
         ReqwestHttpClient {
-            client: reqwest::Client::new(),
+            // A timeout bounds the forward/proxy mode: a slow upstream must not
+            // pin a Tokio worker indefinitely.
+            client: reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(30))
+                .build()
+                .unwrap_or_default(),
         }
     }
+
+    /// Send a prepared request and collect status + headers + body.
+    async fn finish(req: reqwest::RequestBuilder) -> Result<HttpResponse, String> {
+        let resp = req.send().await.map_err(|e| e.to_string())?;
+        let status = resp.status().as_u16();
+        let headers = resp
+            .headers()
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or("").to_string()))
+            .collect();
+        let body = resp.bytes().await.map_err(|e| e.to_string())?.to_vec();
+        Ok(HttpResponse {
+            status,
+            headers,
+            body,
+        })
+    }
+}
+
+fn with_headers(
+    mut req: reqwest::RequestBuilder,
+    headers: &[(String, String)],
+) -> reqwest::RequestBuilder {
+    for (k, v) in headers {
+        req = req.header(k, v);
+    }
+    req
 }
 
 #[async_trait]
@@ -106,25 +138,11 @@ impl HttpClient for ReqwestHttpClient {
         form: &[(String, String)],
         headers: &[(String, String)],
     ) -> Result<HttpResponse, String> {
-        let mut req = self.client.post(url).form(form);
-        for (k, v) in headers {
-            req = req.header(k, v);
-        }
-        let resp = req.send().await.map_err(|e| e.to_string())?;
-        let status = resp.status().as_u16();
-        let body = resp.bytes().await.map_err(|e| e.to_string())?.to_vec();
-        Ok(HttpResponse { status, body })
+        Self::finish(with_headers(self.client.post(url).form(form), headers)).await
     }
 
     async fn get(&self, url: &str, headers: &[(String, String)]) -> Result<HttpResponse, String> {
-        let mut req = self.client.get(url);
-        for (k, v) in headers {
-            req = req.header(k, v);
-        }
-        let resp = req.send().await.map_err(|e| e.to_string())?;
-        let status = resp.status().as_u16();
-        let body = resp.bytes().await.map_err(|e| e.to_string())?.to_vec();
-        Ok(HttpResponse { status, body })
+        Self::finish(with_headers(self.client.get(url), headers)).await
     }
 
     async fn post_json(
@@ -133,13 +151,25 @@ impl HttpClient for ReqwestHttpClient {
         body: &[u8],
         headers: &[(String, String)],
     ) -> Result<HttpResponse, String> {
-        let mut req = self.client.post(url).body(body.to_vec());
-        for (k, v) in headers {
-            req = req.header(k, v);
-        }
-        let resp = req.send().await.map_err(|e| e.to_string())?;
-        let status = resp.status().as_u16();
-        let body = resp.bytes().await.map_err(|e| e.to_string())?.to_vec();
-        Ok(HttpResponse { status, body })
+        Self::finish(with_headers(
+            self.client.post(url).body(body.to_vec()),
+            headers,
+        ))
+        .await
+    }
+
+    async fn request(
+        &self,
+        method: &str,
+        url: &str,
+        body: &[u8],
+        headers: &[(String, String)],
+    ) -> Result<HttpResponse, String> {
+        let m = reqwest::Method::from_bytes(method.as_bytes()).map_err(|e| e.to_string())?;
+        Self::finish(with_headers(
+            self.client.request(m, url).body(body.to_vec()),
+            headers,
+        ))
+        .await
     }
 }

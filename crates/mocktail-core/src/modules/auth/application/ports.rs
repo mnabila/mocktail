@@ -12,7 +12,13 @@ pub trait UserRepository: Send + Sync {
     async fn find_by_username(&self, username: &str) -> AppResult<Option<User>>;
     async fn insert(&self, user: &User) -> AppResult<()>;
     async fn update(&self, user: &User) -> AppResult<()>;
-    async fn add_identity(&self, user_id: &UserId, provider: &str, subject: &str, email: Option<String>) -> AppResult<()>;
+    async fn add_identity(
+        &self,
+        user_id: &UserId,
+        provider: &str,
+        subject: &str,
+        email: Option<String>,
+    ) -> AppResult<()>;
     async fn find_identities(&self, user_id: &UserId) -> AppResult<Vec<Identity>>;
 }
 

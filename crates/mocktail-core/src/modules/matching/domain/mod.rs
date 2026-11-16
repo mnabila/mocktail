@@ -45,6 +45,7 @@ mod tests {
                 status: 200,
                 headers: vec![],
                 body: vec![],
+                forward: None,
             },
             priority: Priority(0),
             delay_ms: 0,

@@ -94,7 +94,9 @@ async fn update_user(req: &Request, ctx: &Ctx, actor: &Actor) -> AppResult<Respo
     let display_name = str_field(&body, "displayName")?.trim().to_string();
 
     if username.is_empty() || display_name.is_empty() {
-        return Err(AppError::BadRequest("username and display name are required".into()));
+        return Err(AppError::BadRequest(
+            "username and display name are required".into(),
+        ));
     }
 
     // Check if username is taken by someone else
@@ -110,7 +112,10 @@ async fn update_user(req: &Request, ctx: &Ctx, actor: &Actor) -> AppResult<Respo
 
     ctx.users.update(&user).await?;
 
-    Ok(Response::api_json(200, &json!({ "user": user_json(&user) })))
+    Ok(Response::api_json(
+        200,
+        &json!({ "user": user_json(&user) }),
+    ))
 }
 
 async fn me(ctx: &Ctx, actor: &Actor) -> AppResult<Response> {

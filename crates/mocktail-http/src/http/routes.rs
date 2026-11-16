@@ -2,6 +2,7 @@
 //! `handle` helper.
 
 use super::{auth, collection, folder, mock, mock_runtime, openapi, request_log, workspace};
+use crate::http::util::resolve_rid_from_axum;
 use crate::shared::extract::{AxumRequest, from_axum, to_axum, to_axum_request};
 use crate::shared::hosts;
 use axum::Router;
@@ -16,14 +17,15 @@ use mocktail_core::shared::http::{Request as CoreRequest, Response as CoreRespon
 use serde_json::json;
 use std::sync::Arc;
 use tracing::info_span;
-use crate::http::util::resolve_rid_from_axum;
 
 /// Build the shared application router.
 pub(crate) fn router(ctx: Arc<Ctx>) -> Router {
     let app = Router::new()
         .route("/__admin/health", get(health))
-        .route("/__admin/me", get(auth::me_route).patch(auth::update_user_route))
-
+        .route(
+            "/__admin/me",
+            get(auth::me_route).patch(auth::update_user_route),
+        )
         .route(
             "/__admin/workspaces",
             get(workspace::list_workspaces_route).post(workspace::create_workspace_route),
@@ -92,8 +94,11 @@ pub(crate) fn router(ctx: Arc<Ctx>) -> Router {
         .fallback(apex_fallback)
         .with_state(ctx.clone());
 
-    app.layer(middleware::from_fn_with_state(ctx.clone(), logging_middleware))
-       .layer(middleware::from_fn_with_state(ctx, host_guard))
+    app.layer(middleware::from_fn_with_state(
+        ctx.clone(),
+        logging_middleware,
+    ))
+    .layer(middleware::from_fn_with_state(ctx, host_guard))
 }
 
 /// Test/back-compat entry point. Runs the real router as a one-shot service.

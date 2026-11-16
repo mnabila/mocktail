@@ -1,5 +1,5 @@
-mod runtime;
 mod otel;
+mod runtime;
 
 use mocktail_core::app::ctx::{
     AuthConfig, Ctx, DEFAULT_WORKSPACE_SEPARATORS, parse_workspace_separators,
@@ -62,7 +62,7 @@ async fn fetch(
         .call(req)
         .await
         .unwrap_or_else(|_| unreachable!("axum router is infallible"));
-    
+
     // OTel Push: Send trace to Alloy before returning response.
     let otel_endpoint = env
         .var("OTEL_ENDPOINT")
@@ -73,11 +73,11 @@ async fn fetch(
         .map(|v| v.to_string())
         .unwrap_or_else(|_| "development".to_string());
     let otel = otel::OtelWorker::new(otel_endpoint, otel_env);
-    
+
     let duration_ms = (js_sys::Date::now() - start_time) as u64;
     let path = "http.request"; // Simplified for worker
-    
-    // We don't await this if we want to keep latency low, but in Workers, 
+
+    // We don't await this if we want to keep latency low, but in Workers,
     // we must await or use ctx.waitUntil.
     let _ = otel.push_trace(path, duration_ms).await;
 
@@ -107,8 +107,7 @@ fn build_ctx(env: &Env) -> std::result::Result<Ctx, String> {
     let http: Arc<dyn mocktail_core::shared::ports::HttpClient> = Arc::new(FetchHttpClient);
     let apex_host = require("APEX_HOST")?.to_ascii_lowercase();
     let workspace_separators = parse_workspace_separators(
-        &get("WORKSPACE_SEPARATORS")
-            .unwrap_or_else(|| DEFAULT_WORKSPACE_SEPARATORS.to_string()),
+        &get("WORKSPACE_SEPARATORS").unwrap_or_else(|| DEFAULT_WORKSPACE_SEPARATORS.to_string()),
     )?;
     let public_base_url = require("PUBLIC_BASE_URL")?;
     let session_secret = require("SESSION_SECRET")?;

@@ -26,6 +26,7 @@
   import MockHeadersTab from '$lib/features/mocks/MockHeadersTab.svelte';
   import MockSettingsTab from '$lib/features/mocks/MockSettingsTab.svelte';
   import MockRateLimitTab from '$lib/features/mocks/MockRateLimitTab.svelte';
+  import MockProxyTab from '$lib/features/mocks/MockProxyTab.svelte';
 
   let wsSlug = $derived(page.params.ws ?? '');
   let collSlug = $derived(page.params.coll ?? '');
@@ -39,7 +40,8 @@
     { id: 'response', label: 'Response' },
     { id: 'headers', label: 'Headers' },
     { id: 'settings', label: 'Settings' },
-    { id: 'ratelimit', label: 'Rate limit' }
+    { id: 'ratelimit', label: 'Rate limit' },
+    { id: 'proxy', label: 'Proxy' }
   ] as const;
   let etab = $state<(typeof EDITOR_TABS)[number]['id']>('response');
 
@@ -56,7 +58,8 @@
         headers: [],
         body: '',
         contentType: 'application/json',
-        customType: false
+        customType: false,
+        forward: { baseUrl: '' }
       },
       priority: 0,
       delayMs: 0,
@@ -90,7 +93,8 @@
         headers: normalizeHeaders(m.response.headers),
         body: m.response.body ?? '',
         contentType: ct,
-        customType: !PRESET_TYPES.includes(ct)
+        customType: !PRESET_TYPES.includes(ct),
+        forward: { baseUrl: m.response.forward?.baseUrl ?? '' }
       },
       priority: m.priority,
       delayMs: m.delayMs,
@@ -187,7 +191,10 @@
             contentType: draft.response.contentType || 'text/plain',
             headers: draft.response.headers
               .filter((h) => h.name.trim())
-              .map((h) => ({ name: h.name.trim(), value: h.value }))
+              .map((h) => ({ name: h.name.trim(), value: h.value })),
+            forward: draft.response.forward?.baseUrl.trim()
+              ? { baseUrl: draft.response.forward.baseUrl.trim() }
+              : null
           },
           priority: Number(draft.priority),
           delayMs: Number(draft.delayMs),
@@ -279,6 +286,9 @@
         {#if t.id === 'ratelimit' && Number(editing.rateLimit.limit) > 0}
           <span class="tab-dot"></span>
         {/if}
+        {#if t.id === 'proxy' && editing.response.forward.baseUrl.trim()}
+          <span class="tab-dot"></span>
+        {/if}
       </button>
     {/each}
   </div>
@@ -292,6 +302,8 @@
       <MockSettingsTab bind:editing />
     {:else if etab === 'ratelimit'}
       <MockRateLimitTab bind:editing />
+    {:else if etab === 'proxy'}
+      <MockProxyTab bind:editing />
     {/if}
   </div>
 {/if}

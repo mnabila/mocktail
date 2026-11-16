@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use serde_json::Value;
 use std::sync::Arc;
-use tracing::{debug, error, span, Level};
+use tracing::{Level, debug, error, span};
 
 /// A bound SQL parameter value.
 #[derive(Clone, Debug)]

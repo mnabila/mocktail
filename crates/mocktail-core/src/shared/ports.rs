@@ -22,6 +22,7 @@ pub trait IdGenerator: Send + Sync {
 /// Response from an outbound HTTP call made through the `HttpClient` port.
 pub struct HttpResponse {
     pub status: u16,
+    pub headers: Vec<(String, String)>,
     pub body: Vec<u8>,
 }
 
@@ -42,6 +43,16 @@ pub trait HttpClient: Send + Sync {
     /// POST a raw JSON body (e.g. OAuth token or userinfo calls).
     async fn post_json(
         &self,
+        url: &str,
+        body: &[u8],
+        headers: &[(String, String)],
+    ) -> Result<HttpResponse, String>;
+
+    /// Forward an arbitrary request (any method + raw body) to `url`, used by
+    /// the mock proxy/forward response mode.
+    async fn request(
+        &self,
+        method: &str,
         url: &str,
         body: &[u8],
         headers: &[(String, String)],

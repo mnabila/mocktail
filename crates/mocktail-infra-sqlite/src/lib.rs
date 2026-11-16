@@ -188,10 +188,21 @@ impl UserRepository for SqliteRepositories {
     async fn update(&self, user: &User) -> AppResult<()> {
         self.user.update(user).await
     }
-    async fn add_identity(&self, user_id: &UserId, provider: &str, subject: &str, email: Option<String>) -> AppResult<()> {
-        self.user.add_identity(user_id, provider, subject, email).await
+    async fn add_identity(
+        &self,
+        user_id: &UserId,
+        provider: &str,
+        subject: &str,
+        email: Option<String>,
+    ) -> AppResult<()> {
+        self.user
+            .add_identity(user_id, provider, subject, email)
+            .await
     }
-    async fn find_identities(&self, user_id: &UserId) -> AppResult<Vec<mocktail_core::modules::auth::domain::Identity>> {
+    async fn find_identities(
+        &self,
+        user_id: &UserId,
+    ) -> AppResult<Vec<mocktail_core::modules::auth::domain::Identity>> {
         self.user.find_identities(user_id).await
     }
 }

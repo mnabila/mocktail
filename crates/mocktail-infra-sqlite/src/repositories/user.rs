@@ -146,7 +146,13 @@ impl UserRepository for UserRepositoryImpl {
         .await
     }
 
-    async fn add_identity(&self, user_id: &UserId, provider: &str, subject: &str, email: Option<String>) -> AppResult<()> {
+    async fn add_identity(
+        &self,
+        user_id: &UserId,
+        provider: &str,
+        subject: &str,
+        email: Option<String>,
+    ) -> AppResult<()> {
         self.execute(
             "INSERT OR REPLACE INTO user_identities(provider,subject,user_id,email) VALUES(?,?,?,?)",
             vec![

@@ -174,6 +174,7 @@ async fn sqlite_round_trips_all_ports() {
             status: 200,
             headers: vec![("content-type".into(), "application/json".into())],
             body: b"{}".to_vec(),
+            forward: None,
         },
         priority: Priority(0),
         delay_ms: 0,
@@ -289,7 +290,9 @@ async fn sqlite_round_trips_all_ports() {
             .is_none()
     );
     // For the "connect" part of the test, we now use add_identity
-    UserRepository::add_identity(&repo, &UserId::new("u1"), "google", "g", None).await.unwrap();
+    UserRepository::add_identity(&repo, &UserId::new("u1"), "google", "g", None)
+        .await
+        .unwrap();
     assert!(
         UserRepository::find_by_identity(&repo, "google", "g")
             .await

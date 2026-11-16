@@ -134,6 +134,7 @@ pub async fn commit_import(
                 status: draft.status,
                 headers,
                 body: draft.body.clone(),
+                forward: None,
             },
             priority: Priority(0),
             delay_ms: 0,

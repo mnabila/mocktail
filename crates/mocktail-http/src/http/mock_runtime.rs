@@ -2,12 +2,13 @@
 //! construction. Static admin/auth routes live in the other feature modules;
 //! this is the fallback used for the host-first mock surface.
 
+use crate::http::util::{REQUEST_ID_HEADER, resolve_request_id};
 use crate::shared::{cors, hosts};
-use crate::http::util::{resolve_request_id, REQUEST_ID_HEADER};
 use mocktail_core::app::ctx::Ctx;
+use mocktail_core::modules::auth::domain::urlencode;
 use mocktail_core::modules::collection::domain::Collection;
 use mocktail_core::modules::matching::application::{Resolved, render_body, resolve_mock};
-use mocktail_core::modules::mock::domain::RateLimit;
+use mocktail_core::modules::mock::domain::{ForwardSpec, RateLimit};
 use mocktail_core::modules::request_log::domain::{RequestId, RequestLog, ResponseLog};
 use mocktail_core::modules::workspace::domain::Workspace;
 use mocktail_core::shared::http::{Method, Request, Response};
@@ -57,7 +58,7 @@ pub(crate) async fn mock_runtime(req: &Request, ctx: &Ctx, ws_slug: &str) -> Res
         }
         Err(e) => {
             tracing::error!(rid = %rid, error = %e, "Error finding workspace");
-            return internal(&rid, e)
+            return internal(&rid, e);
         }
     };
 
@@ -68,16 +69,16 @@ pub(crate) async fn mock_runtime(req: &Request, ctx: &Ctx, ws_slug: &str) -> Res
             Ok(Some(c)) => c,
             Ok(None) => {
                 tracing::warn!(rid = %rid, workspace = %ws.id, collection = %cslug, "Collection not found");
-                return unknown_collection(&rid, ctx, &ws, coll_slug_raw, req).await
+                return unknown_collection(&rid, ctx, &ws, coll_slug_raw, req).await;
             }
             Err(e) => {
                 tracing::error!(rid = %rid, error = %e, "Error finding collection");
-                return internal(&rid, e)
+                return internal(&rid, e);
             }
         },
         Err(_) => {
             tracing::debug!(rid = %rid, slug_raw = %coll_slug_raw, "Invalid collection slug");
-            return unknown_collection(&rid, ctx, &ws, coll_slug_raw, req).await
+            return unknown_collection(&rid, ctx, &ws, coll_slug_raw, req).await;
         }
     };
 
@@ -144,7 +145,12 @@ pub(crate) async fn mock_runtime(req: &Request, ctx: &Ctx, ws_slug: &str) -> Res
             if resolved.mock.delay_ms > 0 {
                 ctx.timer.sleep_ms(resolved.mock.delay_ms).await;
             }
-            let resp = build_mock_response(&coll, &resolved, req, &rid);
+            let resp = match &resolved.mock.response.forward {
+                Some(fwd) => {
+                    forward_response(&coll, fwd, req, &spec_path, ctx, &resolved.reason, &rid).await
+                }
+                None => build_mock_response(&coll, &resolved, req, &rid),
+            };
             log_request(
                 ctx,
                 &rid,
@@ -232,6 +238,97 @@ fn build_mock_response(
         .insert(REQUEST_ID_HEADER, rid.as_str().to_string());
     resp.headers
         .insert("X-Mocktail-Match-Reason", resolved.reason.clone());
+    resp
+}
+
+/// Hop-by-hop headers plus `Authorization`/`Cookie`/`Host`: never passed to an
+/// upstream (would leak mocktail's own credentials) nor copied back verbatim.
+const FORWARD_SKIP: &[&str] = &[
+    "host",
+    "authorization",
+    "cookie",
+    "connection",
+    "keep-alive",
+    "proxy-authenticate",
+    "proxy-authorization",
+    "te",
+    "trailer",
+    "transfer-encoding",
+    "upgrade",
+    "content-length",
+];
+
+fn skip_forward_header(name: &str) -> bool {
+    FORWARD_SKIP.iter().any(|h| name.eq_ignore_ascii_case(h))
+}
+
+/// Upstream response headers we must not relay to the client: hop-by-hop, plus
+/// `Set-Cookie` (cookie fixation on the workspace host) and `Access-Control-*`
+/// (our own CORS policy is applied afterwards and must win).
+fn skip_response_header(name: &str) -> bool {
+    skip_forward_header(name)
+        || name.eq_ignore_ascii_case("set-cookie")
+        || name.len() >= 15 && name[..15].eq_ignore_ascii_case("access-control-")
+}
+
+/// Proxy the matched request to `fwd.base_url` + sub-path + query and return the
+/// upstream response. `base_url` is RBAC-gated and validated against internal
+/// address ranges at save time (`validate_forward_base_url`); inbound
+/// credentials and upstream `Set-Cookie`/CORS headers are stripped here.
+async fn forward_response(
+    coll: &Collection,
+    fwd: &ForwardSpec,
+    req: &Request,
+    spec_path: &str,
+    ctx: &Ctx,
+    reason: &str,
+    rid: &RequestId,
+) -> Response {
+    let mut url = format!("{}{}", fwd.base_url.trim_end_matches('/'), spec_path);
+    if !req.query.is_empty() {
+        let qs = req
+            .query
+            .iter()
+            .map(|(k, v)| format!("{}={}", urlencode(k), urlencode(v)))
+            .collect::<Vec<_>>()
+            .join("&");
+        url.push('?');
+        url.push_str(&qs);
+    }
+    let headers: Vec<(String, String)> = req
+        .headers
+        .iter()
+        .filter(|(k, _)| !skip_forward_header(k))
+        .map(|(k, v)| (k.to_string(), v.to_string()))
+        .collect();
+
+    let mut resp = match ctx
+        .http
+        .request(req.method.as_str(), &url, &req.body, &headers)
+        .await
+    {
+        Ok(up) => {
+            let mut r = Response::new(up.status).with_body(up.body);
+            for (k, v) in up.headers {
+                if !skip_response_header(&k) {
+                    r.headers.insert(k, v);
+                }
+            }
+            r
+        }
+        Err(e) => {
+            tracing::warn!(rid = %rid, url = %url, error = %e, "forward upstream failed");
+            Response::json(
+                502,
+                &serde_json::json!({ "error": "forward failed", "upstream": url }),
+            )
+        }
+    };
+    cors::apply_cors_headers(&mut resp, &coll.cors_policy, req.headers.get("origin"));
+    resp.headers
+        .insert(REQUEST_ID_HEADER, rid.as_str().to_string());
+    resp.headers
+        .insert("X-Mocktail-Match-Reason", reason.to_string());
     resp
 }
 

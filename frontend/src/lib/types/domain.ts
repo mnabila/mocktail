@@ -56,6 +56,7 @@ export interface Mock {
     headers: Array<[string, string]>;
     body: string;
     contentType?: string | null;
+    forward?: { baseUrl: string } | null;
   };
   priority: number;
   delayMs: number;
@@ -197,6 +198,7 @@ export interface MockEditorDraft {
     body: string;
     contentType: string;
     customType: boolean;
+    forward: { baseUrl: string };
   };
   priority: number;
   delayMs: number;

@@ -266,7 +266,15 @@ fn workspace_update_and_email_invite() {
         });
         // Seed the identity for the invitee
         let invitee_id = UserId::new("invitee0000000000000001");
-        h.repos.add_identity(&invitee_id, "github", "2", Some("invitee@example.com".into())).await.unwrap();
+        h.repos
+            .add_identity(
+                &invitee_id,
+                "github",
+                "2",
+                Some("invitee@example.com".into()),
+            )
+            .await
+            .unwrap();
         let resp = handle(
             areq(
                 &h,
@@ -296,7 +304,15 @@ fn workspace_update_and_email_invite() {
         });
         // Seed the identity for the other invitee
         let other_invitee_id = UserId::new("invitee0000000000000002");
-        h.repos.add_identity(&other_invitee_id, "google", "3", Some("invitee@example.com".into())).await.unwrap();
+        h.repos
+            .add_identity(
+                &other_invitee_id,
+                "google",
+                "3",
+                Some("invitee@example.com".into()),
+            )
+            .await
+            .unwrap();
         let resp = handle(
             areq(
                 &h,

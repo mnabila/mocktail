@@ -32,12 +32,14 @@ pub async fn complete_login(
         created_at: clock.now_millis(),
     };
     users.insert(&user).await?;
-    users.add_identity(
-        &user.id,
-        &outcome.provider,
-        &outcome.subject,
-        outcome.email.clone(),
-    ).await?;
+    users
+        .add_identity(
+            &user.id,
+            &outcome.provider,
+            &outcome.subject,
+            outcome.email.clone(),
+        )
+        .await?;
     Ok((user, true))
 }
 
@@ -62,12 +64,14 @@ pub async fn connect_provider(
         .await?
         .ok_or_else(|| AppError::NotFound("current user".into()))?;
 
-    users.add_identity(
-        &user.id,
-        &outcome.provider,
-        &outcome.subject,
-        outcome.email.clone(),
-    ).await?;
+    users
+        .add_identity(
+            &user.id,
+            &outcome.provider,
+            &outcome.subject,
+            outcome.email.clone(),
+        )
+        .await?;
 
     Ok(user)
 }

@@ -365,7 +365,13 @@ impl UserRepository for FakeRepos {
         }
         Ok(())
     }
-    async fn add_identity(&self, _user_id: &UserId, _provider: &str, _subject: &str, _email: Option<String>) -> AppResult<()> {
+    async fn add_identity(
+        &self,
+        _user_id: &UserId,
+        _provider: &str,
+        _subject: &str,
+        _email: Option<String>,
+    ) -> AppResult<()> {
         Ok(())
     }
     async fn find_identities(&self, _user_id: &UserId) -> AppResult<Vec<Identity>> {
@@ -481,6 +487,15 @@ impl HttpClient for NoHttp {
     ) -> Result<HttpResponse, String> {
         Err("no http".into())
     }
+    async fn request(
+        &self,
+        _method: &str,
+        _url: &str,
+        _body: &[u8],
+        _headers: &[(String, String)],
+    ) -> Result<HttpResponse, String> {
+        Err("no http".into())
+    }
 }
 
 /// HttpClient returning scripted JSON bodies by URL substring (OAuth tests).
@@ -498,12 +513,14 @@ impl HttpClient for ScriptedHttp {
     ) -> Result<HttpResponse, String> {
         Ok(HttpResponse {
             status: 200,
+            headers: vec![],
             body: self.token_body.clone(),
         })
     }
     async fn get(&self, _url: &str, _headers: &[(String, String)]) -> Result<HttpResponse, String> {
         Ok(HttpResponse {
             status: 200,
+            headers: vec![],
             body: self.userinfo_body.clone(),
         })
     }
@@ -515,6 +532,20 @@ impl HttpClient for ScriptedHttp {
     ) -> Result<HttpResponse, String> {
         Ok(HttpResponse {
             status: 200,
+            headers: vec![],
+            body: self.token_body.clone(),
+        })
+    }
+    async fn request(
+        &self,
+        _method: &str,
+        _url: &str,
+        _body: &[u8],
+        _headers: &[(String, String)],
+    ) -> Result<HttpResponse, String> {
+        Ok(HttpResponse {
+            status: 200,
+            headers: vec![],
             body: self.token_body.clone(),
         })
     }
@@ -578,8 +609,13 @@ pub fn make_ctx(
 
 /// Default harness: no providers, no network, one signed-in user.
 pub fn harness() -> Harness {
+    harness_with_http(Arc::new(NoHttp))
+}
+
+/// Harness with a custom outbound HTTP client (for forward/proxy tests).
+pub fn harness_with_http(http: Arc<dyn HttpClient>) -> Harness {
     let repos = Arc::new(FakeRepos::default());
-    let ctx = make_ctx(repos.clone(), Arc::new(NoHttp), HashMap::new());
+    let ctx = make_ctx(repos.clone(), http, HashMap::new());
 
     // Seed a user and mint a session for it.
     let user = User {

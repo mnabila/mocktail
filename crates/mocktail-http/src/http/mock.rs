@@ -11,7 +11,8 @@ use mocktail_core::app::ctx::Ctx;
 use mocktail_core::modules::collection::application as coll_app;
 use mocktail_core::modules::mock::application as mock_app;
 use mocktail_core::modules::mock::domain::{
-    Fault, MatchKind, MatchTarget, Mock, Priority, RateLimit, RequestMatcher, ResponseSpec,
+    Fault, ForwardSpec, MatchKind, MatchTarget, Mock, Priority, RateLimit, RequestMatcher,
+    ResponseSpec, validate_forward_base_url,
 };
 use mocktail_core::shared::error::{AppError, AppResult};
 use mocktail_core::shared::http::{Method, Request, Response};
@@ -209,6 +210,7 @@ fn mock_json(m: &Mock) -> Value {
             "headers": headers_json(&headers),
             "body": String::from_utf8_lossy(&m.response.body),
             "contentType": content_type,
+            "forward": m.response.forward.as_ref().map(|f| json!({ "baseUrl": f.base_url })),
         },
         "priority": m.priority.0,
         "delayMs": m.delay_ms,
@@ -273,7 +275,11 @@ fn parse_mock(
     let priority = Priority(body.get("priority").and_then(Value::as_i64).unwrap_or(0) as i32);
     // Clamp to 5 minutes: a configured delay pins a connection on the public
     // mock surface, so an unbounded value is a stored DoS.
-    let delay_ms = body.get("delayMs").and_then(Value::as_u64).unwrap_or(0).min(300_000) as u32;
+    let delay_ms = body
+        .get("delayMs")
+        .and_then(Value::as_u64)
+        .unwrap_or(0)
+        .min(300_000) as u32;
     let fault = match body.get("fault").and_then(Value::as_str) {
         Some("connectionReset") => Some(Fault::ConnectionReset),
         Some("malformedResponse") => Some(Fault::MalformedResponse),
@@ -370,10 +376,24 @@ fn parse_response(v: &Value) -> AppResult<ResponseSpec> {
         .unwrap_or("")
         .as_bytes()
         .to_vec();
+    let forward = v
+        .get("forward")
+        .and_then(|f| f.get("baseUrl"))
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| {
+            validate_forward_base_url(s).map_err(AppError::BadRequest)?;
+            Ok::<_, AppError>(ForwardSpec {
+                base_url: s.to_string(),
+            })
+        })
+        .transpose()?;
     Ok(ResponseSpec {
         status,
         headers,
         body,
+        forward,
     })
 }
 

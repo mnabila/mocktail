@@ -6,7 +6,8 @@ use mocktail_core::modules::auth::domain::{Membership, Role, User};
 use mocktail_core::modules::collection::domain::{AllowOrigins, Collection, CorsPolicy, Source};
 use mocktail_core::modules::folder::domain::Folder;
 use mocktail_core::modules::mock::domain::{
-    Fault, MatchKind, MatchTarget, Mock, Priority, RateLimit, RequestMatcher, ResponseSpec,
+    Fault, ForwardSpec, MatchKind, MatchTarget, Mock, Priority, RateLimit, RequestMatcher,
+    ResponseSpec,
 };
 use mocktail_core::modules::request_log::domain::{RequestId, RequestLog, ResponseLog};
 use mocktail_core::modules::workspace::domain::Workspace;
@@ -205,6 +206,9 @@ pub fn mock_to_doc(m: &Mock) -> MockDoc {
             status: m.response.status,
             headers: m.response.headers.clone(),
             body: String::from_utf8_lossy(&m.response.body).to_string(),
+            forward: m.response.forward.as_ref().map(|f| ForwardDoc {
+                baseUrl: f.base_url.clone(),
+            }),
         },
         priority: m.priority.0,
         delay_ms: m.delay_ms,
@@ -247,6 +251,9 @@ pub fn mock_from_doc(d: MockDoc) -> AppResult<Mock> {
             status: d.response.status,
             headers: d.response.headers,
             body: d.response.body.into_bytes(),
+            forward: d.response.forward.map(|f| ForwardSpec {
+                base_url: f.baseUrl,
+            }),
         },
         priority: Priority(d.priority),
         delay_ms: d.delay_ms,

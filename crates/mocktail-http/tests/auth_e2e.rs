@@ -260,7 +260,10 @@ fn connect_provider_links_and_rejects_when_taken() {
         };
         repos.users.borrow_mut().push(user.clone());
         // Manually seed identity because User struct no longer holds them
-        repos.add_identity(&user.id, "github", "1", Some("me@example.com".into())).await.unwrap();
+        repos
+            .add_identity(&user.id, "github", "1", Some("me@example.com".into()))
+            .await
+            .unwrap();
 
         let http = Arc::new(ScriptedHttp {
             token_body: br#"{"access_token":"at"}"#.to_vec(),
@@ -346,7 +349,10 @@ fn connect_provider_links_and_rejects_when_taken() {
         });
         // Seed the identity for the other user
         let other_id = UserId::new("otheruser0000000000000001");
-        repos.add_identity(&other_id, "google", "g-taken", None).await.unwrap();
+        repos
+            .add_identity(&other_id, "google", "g-taken", None)
+            .await
+            .unwrap();
 
         let http2 = Arc::new(ScriptedHttp {
             token_body: br#"{"access_token":"at"}"#.to_vec(),

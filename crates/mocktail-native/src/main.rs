@@ -35,12 +35,12 @@ struct Args {
     option: Vec<String>,
 }
 
-use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter};
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt};
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    
+
     // When no --config is passed, auto-pick ./config.yaml if it exists.
     let config_path = args.config.or_else(|| {
         std::path::Path::new(config::DEFAULT_CONFIG_FILE)
@@ -54,13 +54,10 @@ fn main() -> Result<()> {
     }
     let cfg = config::load(config_path.as_deref(), &args.option)?;
 
-    let (otel_handle, tracing_layer) = otel::init(
-        "mocktail",
-        &cfg.otel,
-    );
+    let (otel_handle, tracing_layer) = otel::init("mocktail", &cfg.otel);
 
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into());
-    
+
     if let Some(layer) = tracing_layer {
         tracing_subscriber::registry()
             .with(layer)
@@ -68,9 +65,7 @@ fn main() -> Result<()> {
             .with(fmt::layer())
             .init();
     } else {
-        fmt()
-            .with_env_filter(filter)
-            .init();
+        fmt().with_env_filter(filter).init();
     }
 
     tracing::info!("Starting Mocktail native server...");

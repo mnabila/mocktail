@@ -2,33 +2,40 @@
 //!
 //! Configures OTLP tracing (push) and OTLP metrics (push).
 
-use opentelemetry::{global, metrics::Counter, KeyValue};
 use opentelemetry::trace::TracerProvider;
+use opentelemetry::{KeyValue, global, metrics::Counter};
+use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::Resource;
 use tracing_opentelemetry::OpenTelemetryLayer;
-use opentelemetry_otlp::WithExportConfig;
 
 pub struct OtelHandle {
     pub http_requests: Counter<u64>,
 }
 
 // We use the concrete types for the layer to avoid complex generics in the return type.
-type OtelLayer = OpenTelemetryLayer<tracing_subscriber::Registry, opentelemetry_sdk::trace::SdkTracer>;
+type OtelLayer =
+    OpenTelemetryLayer<tracing_subscriber::Registry, opentelemetry_sdk::trace::SdkTracer>;
 
-pub fn init(service_name: &str, cfg: &crate::config::OtelConfig) -> (OtelHandle, Option<OtelLayer>) {
+pub fn init(
+    service_name: &str,
+    cfg: &crate::config::OtelConfig,
+) -> (OtelHandle, Option<OtelLayer>) {
     if !cfg.enabled {
         let meter = global::meter("mocktail");
         let http_requests = meter
             .u64_counter("http_requests_total")
             .with_description("Total number of HTTP requests")
             .build();
-            
+
         return (OtelHandle { http_requests }, None);
     }
 
     let resource = Resource::builder()
         .with_service_name(service_name.to_string())
-        .with_attribute(KeyValue::new("deployment.environment", cfg.environment.clone()))
+        .with_attribute(KeyValue::new(
+            "deployment.environment",
+            cfg.environment.clone(),
+        ))
         .build();
 
     let endpoint = if cfg.endpoint.starts_with("http") {
@@ -60,8 +67,7 @@ pub fn init(service_name: &str, cfg: &crate::config::OtelConfig) -> (OtelHandle,
         .build()
         .expect("failed to build OTLP metric exporter");
 
-    let reader = opentelemetry_sdk::metrics::PeriodicReader::builder(metric_exporter)
-        .build();
+    let reader = opentelemetry_sdk::metrics::PeriodicReader::builder(metric_exporter).build();
 
     let meter_provider = opentelemetry_sdk::metrics::SdkMeterProvider::builder()
         .with_reader(reader)
@@ -70,7 +76,7 @@ pub fn init(service_name: &str, cfg: &crate::config::OtelConfig) -> (OtelHandle,
 
     global::set_meter_provider(meter_provider);
     let meter = global::meter("mocktail");
-    
+
     let http_requests = meter
         .u64_counter("http_requests_total")
         .with_description("Total number of HTTP requests")
@@ -79,10 +85,7 @@ pub fn init(service_name: &str, cfg: &crate::config::OtelConfig) -> (OtelHandle,
     // 3. Tracing Layer for tracing-subscriber
     let tracing_layer = OpenTelemetryLayer::new(tracer);
 
-    (
-        OtelHandle { http_requests },
-        Some(tracing_layer),
-    )
+    (OtelHandle { http_requests }, Some(tracing_layer))
 }
 
 pub fn get_metrics() -> String {

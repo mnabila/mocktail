@@ -2,7 +2,7 @@
 //!
 //! Since Workers cannot use gRPC and are ephemeral, we use simple HTTP POSTs.
 
-use serde::{Serialize};
+use serde::Serialize;
 use worker::*;
 
 #[derive(Serialize)]
@@ -55,19 +55,32 @@ pub struct OtelWorker {
 
 impl OtelWorker {
     pub fn new(endpoint: String, environment: String) -> Self {
-        Self { endpoint, environment }
+        Self {
+            endpoint,
+            environment,
+        }
     }
 
     /// Pushes a simplified trace to the Alloy collector.
     pub async fn push_trace(&self, name: &str, duration_ms: u64) {
         let now = js_sys::Date::now() as u64 * 1_000_000;
-        
+
         let request = OTLPRequest {
             resourceSpans: vec![ResourceSpan {
                 resource: Resource {
                     attributes: vec![
-                        KeyValue { key: "service.name".into(), value: Value { stringValue: "mocktail-worker".into() } },
-                        KeyValue { key: "deployment.environment".into(), value: Value { stringValue: self.environment.clone() } },
+                        KeyValue {
+                            key: "service.name".into(),
+                            value: Value {
+                                stringValue: "mocktail-worker".into(),
+                            },
+                        },
+                        KeyValue {
+                            key: "deployment.environment".into(),
+                            value: Value {
+                                stringValue: self.environment.clone(),
+                            },
+                        },
                     ],
                 },
                 scopeSpans: vec![ScopeSpan {
@@ -85,7 +98,7 @@ impl OtelWorker {
         };
 
         let body = serde_json::to_string(&request).unwrap_or_default();
-        
+
         // Use worker::Fetch to push the trace to Alloy.
         let headers = Headers::new();
         let _ = headers.set("Content-Type", "application/json");

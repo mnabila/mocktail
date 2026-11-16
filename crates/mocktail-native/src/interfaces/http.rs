@@ -28,27 +28,31 @@ pub async fn serve(bind: &str, ctx: Arc<Ctx>, otel_handle: crate::otel::OtelHand
     let app = mocktail_http::router(ctx.clone())
         .route(
             "/metrics",
-            get(move |headers: axum::http::HeaderMap| metrics_handler(metrics_ctx.clone(), headers)),
+            get(move |headers: axum::http::HeaderMap| {
+                metrics_handler(metrics_ctx.clone(), headers)
+            }),
         )
         .layer(axum::middleware::from_fn_with_state(ctx, native_layer))
-        .layer(axum::middleware::from_fn(move |req: Request, next: Next| {
-            let counter = http_requests.clone();
-            async move {
-                let method = req.method().to_string();
-                let response = next.run(req).await;
-                counter.add(
-                    1,
-                    &[
-                        opentelemetry::KeyValue::new("http.method", method),
-                        opentelemetry::KeyValue::new(
-                            "http.status",
-                            response.status().as_u16() as i64,
-                        ),
-                    ],
-                );
-                response
-            }
-        }));
+        .layer(axum::middleware::from_fn(
+            move |req: Request, next: Next| {
+                let counter = http_requests.clone();
+                async move {
+                    let method = req.method().to_string();
+                    let response = next.run(req).await;
+                    counter.add(
+                        1,
+                        &[
+                            opentelemetry::KeyValue::new("http.method", method),
+                            opentelemetry::KeyValue::new(
+                                "http.status",
+                                response.status().as_u16() as i64,
+                            ),
+                        ],
+                    );
+                    response
+                }
+            },
+        ));
     axum::serve(
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),

@@ -48,10 +48,17 @@ pub struct MatcherDoc {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct ForwardDoc {
+    pub baseUrl: String,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct ResponseDoc {
     pub status: u16,
     pub headers: Vec<(String, String)>,
     pub body: String,
+    #[serde(default)]
+    pub forward: Option<ForwardDoc>,
 }
 
 #[derive(Serialize, Deserialize)]
