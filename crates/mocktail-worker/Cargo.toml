@@ -22,7 +22,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json.workspace = true
 hmac.workspace = true
 sha2.workspace = true
-worker = { version = "0.8", features = ["d1", "axum", "http"] }
+worker = { version = "0.9", features = ["d1", "axum", "http"] }
 uuid = { version = "1", features = ["v4", "js"] }
 getrandom = { version = "0.2", features = ["js"] }
 wasm-bindgen = "0.2"
