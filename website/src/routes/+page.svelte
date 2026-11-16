@@ -92,7 +92,9 @@
 		{ id: 'CAP-03', name: 'Dynamic templates', spec: '{{path}} · {{query}} · {{header}} · {{body}}' },
 		{ id: 'CAP-04', name: 'Fault injection', spec: 'delay · malformed · connection reset' },
 		{ id: 'CAP-05', name: 'Request logs', spec: 'matched · unmatched · full transcript' },
-		{ id: 'CAP-06', name: 'Workspaces & RBAC', spec: 'host-routed · owner / editor / viewer · SSO' }
+		{ id: 'CAP-06', name: 'Workspaces & RBAC', spec: 'host-routed · owner / editor / viewer · SSO' },
+		{ id: 'CAP-07', name: 'Proxy forwarding', spec: 'match · forward upstream · return as-is' },
+		{ id: 'CAP-08', name: 'IP allowlist', spec: 'per-collection · IP / CIDR · v4 / v6' }
 	];
 
 	const useCases = [
@@ -359,7 +361,8 @@
 					</h2>
 				</div>
 				<p class="max-w-[34ch] font-mono text-[13px] leading-[1.6] text-muted">
-					One server, no sidecars. Matching, templating, import, faults and logs, all built in.
+					One server, no sidecars. Matching, templating, import, faults, proxy forwarding and
+					access control, all built in.
 				</p>
 			</div>
 
@@ -428,6 +431,56 @@
 						</div>
 					</div>
 					<h3 class="mt-auto pt-2 font-display text-[17px] font-bold">Faults on demand</h3>
+				</article>
+			</div>
+
+			<!-- Two more specimen panels: forwarding + access -->
+			<div class="grid grid-cols-2 border-b border-ink/15 max-md:grid-cols-1">
+				<!-- proxy forwarding -->
+				<article
+					use:reveal
+					class="flex flex-col gap-4 border-ink/15 p-[clamp(18px,2vw,28px)] max-md:border-b md:border-r"
+					style="--d: 0ms"
+				>
+					<p class="tag text-muted">specimen · forward</p>
+					<div class="flex items-center gap-2.5 font-mono text-[14px]">
+						<span class="bg-ink px-1.5 py-0.5 text-[12px] font-semibold text-tile">POST</span>
+						<span class="font-sans font-semibold">/v1/charges</span>
+					</div>
+					<div class="flex flex-col font-mono text-[12.5px]">
+						<div class="flex items-center gap-2 border-t border-ink/10 py-2">
+							<span class="text-accent">↓</span>
+							<span class="text-muted">forward to</span>
+							<span class="ml-auto font-semibold">api.upstream.com</span>
+						</div>
+						<div class="flex items-baseline justify-between border-t border-ink/10 py-2">
+							<span class="text-muted">response</span>
+							<strong class="text-[14px]">201 · upstream, as-is</strong>
+						</div>
+					</div>
+					<h3 class="mt-auto pt-2 font-display text-[17px] font-bold">Proxy forwarding</h3>
+				</article>
+
+				<!-- ip allowlist -->
+				<article use:reveal class="flex flex-col gap-4 p-[clamp(18px,2vw,28px)]" style="--d: 90ms">
+					<p class="tag text-muted">specimen · access</p>
+					<dl class="flex flex-col font-mono text-[12.5px]">
+						{#each [['allow', '10.0.0.0/8'], ['allow', '203.0.113.5']] as [k, v]}
+							<div class="flex items-baseline gap-4 border-t border-ink/10 py-2">
+								<dt class="w-12 shrink-0 text-accent">{k}</dt>
+								<dd class="font-semibold">{v}</dd>
+							</div>
+						{/each}
+					</dl>
+					<div class="flex flex-col gap-2 border-t border-ink/10 pt-3 font-mono text-[12.5px]">
+						<div class="flex items-center justify-between">
+							<span>10.0.0.9</span><strong class="text-[14px]">200</strong>
+						</div>
+						<div class="flex items-center justify-between">
+							<span>198.51.100.4</span><strong class="text-[14px] text-danger">403</strong>
+						</div>
+					</div>
+					<h3 class="mt-auto pt-2 font-display text-[17px] font-bold">IP allowlist</h3>
 				</article>
 			</div>
 
